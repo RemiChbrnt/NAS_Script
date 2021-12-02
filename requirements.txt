@@ -1,0 +1,2 @@
+tabulate~=0.8.9
+gns3fy @ git+https://github.com/davidban77/gns3fy@583c9aa0a64bac9cb3fdd9631a3af151496cb56e
