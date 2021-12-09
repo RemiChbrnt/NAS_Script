@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+import Interface
 from typing import List, Union
 
 from gns3fy import Node
@@ -17,19 +18,17 @@ class Router:
     console_host: str
     console_port: int
 
-    # type: List[Interface]
-    interfaces: list
+    interfaces: list[Interface.Interface]
 
     @staticmethod
-    def from_node(node: Node, ri, asn):
+    def from_node(node: Node, ri, as_number):
         return Router(name=node.name,
                       x=node.x, y=node.y, uid=node.node_id,
                       console_host=node.console_host, console_port=node.console,
-                      router_id=ri, interfaces=[], as_number=asn)
+                      router_id=ri, interfaces=[], as_number=as_number)
 
 
 class Routers(dict):
-    # type: List[Router]
     def get_by_uid(self, uid: str) -> Router:
         for router in self.values():
             if router.uid == uid:
