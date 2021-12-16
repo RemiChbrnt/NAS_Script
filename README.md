@@ -11,6 +11,19 @@ In GNS3, go to Edit -> Preferences -> Server, Untick **Protect Server with passw
 
 Then download the developer version of [gns3fy](https://github.com/davidban77/gns3fy/tree/developer)
 
+
+## Objectifs
+
+- pour utiliser notre solution, il faut écrire un **fichier de configuration** simple résumant la config : préciser les routers, les liens entre eux, et les Providers Edge qui ont BGP activé
+
+- dans ce fichier de configuration, pas besoin de préciser l'implémentation de ospf ou mpls par exemple car on sait qu'il faut le faire sur tous les routers
+
+- ce fichier de configuration (json) peut générer des fichiers de configuration plus complets à donner au script python pour permettre de réaliser la configuration gns3 de manière automatique
+
+- il faut un json pour le provider et un json pour le client
+
+
 https://www.canva.com/design/DAExX9BsdTc/share/preview?token=K0Yroomzh0LFye2zvATy4Q&role=EDITOR&utm_content=DAExX9BsdTc&utm_campaign=designshare&utm_medium=link&utm_source=sharebutton
+
 
 
