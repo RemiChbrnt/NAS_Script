@@ -25,8 +25,8 @@ def router_list(gns3_server, project_id):
 
 
 def link_list(gns3_server, project_id, routers):
-    ipv4 = 3232235520   # 192.168.0.0
-    links = []      # initializing list
+    ipv4 = 3232235520  # 192.168.0.0
+    links = []  # initializing list
     for gns3_link in gns3_server.get_links(project_id):
         new_link = gns3.Link(connector=gns3_server, project_id=project_id, link_id=gns3_link['link_id'])
         new_link.get()
@@ -37,35 +37,35 @@ def link_list(gns3_server, project_id, routers):
         if router_side_a is None or router_side_b is None:
             continue
 
-        int_a = Interface.Interface(
+        interface_a = Interface.Interface(
             name=new_link.nodes[0]['label']['text'],
-            ipv4=IPv4Address(ipv4+1),
+            ipv4=IPv4Address(ipv4 + 1),
         )
-        int_b = Interface.Interface(
+        interface_b = Interface.Interface(
             name=new_link.nodes[1]['label']['text'],
             ipv4=IPv4Address(ipv4 + 2),
         )
 
-        link = Link.Link(
+        router_side_a.interfaces.append(interface_a)
+        router_side_b.interfaces.append(interface_b)
+
+        link_ab = Link.Link(
             uid=new_link.link_id,
             network4=IPv4Address(ipv4),
             side_a=router_side_a,
             side_b=router_side_b,
-            interface_a=int_a,
-            interface_b=int_b
+            int_a=interface_a,
+            int_b=interface_b,
         )
-        ipv4 += 4   # In order to have a 0 at the end of the Network address
-        print("link list" + str(link))
+        ipv4 += 4  # In order to have a 0 at the end of the Network address
+        print("link list" + str(link_ab))
 
         # Adds the interfaces to the routers
 
-        router_side_a.interfaces.append(int_a)
-        router_side_b.interfaces.append(int_b)
-
-        links.append(link)
+        links.append(link_ab)
     for lien in links:
-        print(f'{lien.side_a.name}>    {lien.network4}    <{lien.side_b.name}')
-        print(f'{lien.interface_a} {lien.side_a.name}>    {lien.network4}    <{lien.side_b.name} {lien.interface_b.ipv4}')
+        print(f'{lien.side_a.name}   >    {lien.network4}    <   {lien.side_b.name}')
+        print(f'{lien.interface_a} {lien.side_a.name}   >    {lien.network4}    <   {lien.side_b.name} {lien.interface_b.ipv4}')
     return links
 
 

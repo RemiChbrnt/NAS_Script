@@ -8,3 +8,6 @@ class Interface:
 
     ipv4: IPv4Address
 
+    def __post_init__(self):
+        print(f"Interface {self.name}, ipaddress {self.ipv4}")
+

@@ -20,6 +20,10 @@ class Router:
 
     interfaces: list[Interface.Interface]
 
+    def __post_init__(self):
+        print(f"Routeur {self.name}, pos {self.x} : {self.y}")
+
+
     @staticmethod
     def from_node(node: Node, ri, as_number):
         return Router(name=node.name,
