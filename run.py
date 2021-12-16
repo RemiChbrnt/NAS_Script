@@ -64,8 +64,7 @@ def link_list(gns3_server, project_id, routers):
 
         links.append(link_ab)
     for lien in links:
-        print(f'{lien.side_a.name}   >    {lien.network4}    <   {lien.side_b.name}')
-        print(f'{lien.interface_a} {lien.side_a.name}   >    {lien.network4}    <   {lien.side_b.name} {lien.interface_b.ipv4}')
+        print(f'{lien.interface_a.ipv4} | {lien.side_a.name} > < {lien.side_b.name} | {lien.interface_b.ipv4}')
     return links
 
 
