@@ -1,0 +1,121 @@
+COMMANDES :
+
+
+
+--------------------------------------------------------------------------
+ Configure IPv6 routing on a router:
+--------------------------------------------------------------------------
+Router# configure terminal
+Router(config)# ipv6 unicast-routing
+Router(config)# end
+Router#
+
+--------------------------------------------------------------------------
+ Configure the IPv6 global unicast addresses on a router:
+--------------------------------------------------------------------------
+Router(config)# interface [name] [number]
+Router(config-if)# ipv6 enable
+Router(config-if)# ipv6 address [ipv6-address]/[prefix-length]
+Router(config-if)# no shutdown
+Router(config)# end
+Router#
+
+--------------------------------------------------------------------------
+ Configure IPv4 routing on a router:
+--------------------------------------------------------------------------
+Router# configure terminal
+Router(config)# interface [interface]
+Router(config-if)# ip address [ip_address] [ip_mask]
+Router(config-if)# no shutdown
+Router(config-if)# end
+Router(config)# end
+Router#
+
+--------------------------------------------------------------------------
+ Show info on interfaces, routes or protocols
+--------------------------------------------------------------------------
+Router# show (ipv6) interface
+Router# show ip route / show ipv6 route
+Router# show ip protocols
+Router# show (ipv6) protocols
+
+--------------------------------------------------------------------------
+ Configure OSPF in the network
+--------------------------------------------------------------------------
+Deux éléments sont à retenir dans une configuration minimale de OSPF :
+
+    - OSPF Process ID
+    - Router ID
+
+Le process ID est le numéro du processus OSPF qui est lancé sur le routeur. On fixe une valeur locale au routeur qui n’a rien à voir avec les numéros de zones (area), positive integer.
+
+Router# configure terminal
+Router(config)# (ipv6) router ospf [process-id]
+
+Router ID : Identifiant unique codé sur 32 bits. Define the router-id 
+as X.X.X.X, where X is the number associate to your router
+
+Router(config-router)# router-id [router-id]
+
+--------------------------------------------------------------------------
+ Activate OSPF in the network
+--------------------------------------------------------------------------
+Activate the OSPF protocol on the backbone interface.
+Make sure you use the same OSPF process-id as the one declared earlier:
+
+Router# conf t
+Router(config)# interface [interface]
+Router(config-if)# ip / ipv6 ospf [process-id] area [area-id]
+Router(config-if)# exit
+
+Do that on every interfaces of every router that you want to configure for OSPF.
+
+--------------------------------------------------------------------------
+ Verify OSPF configuration
+--------------------------------------------------------------------------
+Router# show ip/ipv6 ospf neighbor
+Router# show ip/ipv6 ospf database
+Router# show ip/ipv6 ospf database router
+Router# show ip/ipv6 ospf rib
+
+# show ip route
+# show ip protocols
+
+# show ipv6 route
+# show ipv6 protocols
+
+--------------------------------------------------------------------------
+ ALT
+--------------------------------------------------------------------------
+OSPFv3 = OSPFv2 pour IPv6
+
+
+BGP (voir schéma sur QOS-BGP.pdf)
+
+Sur R2 :
+
+R2# conf t
+R2(config)# router bgp 7200
+R2(config-router)# bgp router-id 2.2.2.2
+
+//connexion au client
+R2(config-router)# neighbor 176.10.12.1 remote-as 7100
+
+//connexion a ses routeurs de bordure dans son as
+R2(config-router)# neighbor 176.10.23.2 remote-as 7200
+R2(config-router)#neighbor 176.10.23.2 next-hop-self
+
+//si jamais on veut ajouter la loopback :
+R2(config-router)# network 2.2.2.2 mask 255.255.255.255
+
+
+
+Sur R1 :
+R1# conf t
+R1(config)# router bgp 7100
+R2(config-router)# bgp router-id 1.1.1.1
+R1(config-router)# neighbor 176.10.12.2 remote-as 7200
+R1(config-router)# network 176.10.1.0 mask 255.255.255.0
+
+
+--------------------------------------------------------------------------
