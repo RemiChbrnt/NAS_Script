@@ -58,7 +58,7 @@ def link_list(gns3_server, project_id, routers):
             int_b=interface_b,
         )
         ipv4 += 4  # In order to have a 0 at the end of the Network address
-        print("link list" + str(link_ab))
+        # print("link list" + str(link_ab))
 
         # Adds the interfaces to the routers
 
