@@ -3,6 +3,7 @@ import Router
 import Interface
 import Link
 from ipaddress import IPv4Address
+import sys
 from tabulate import tabulate
 
 
@@ -76,13 +77,13 @@ def get_config():
 
     try:
         gns3_server = gns3.Gns3Connector("http://localhost:3080")  # Gns3 server connector
-    except StandardError:
+    except Exception:
         print("Error : Cannot connect to GNS3 on localhost")
 
     try:
         # Get the ID of the opened GNS3 project (if there is only one opened)
         project_id = list(filter(check_opened, gns3_server.get_projects()))[0]['project_id']
-    except StandardError:
+    except Exception:
         print("Error : No GNS3 project is opened\n")
         exit(1)
     except IndexError:
