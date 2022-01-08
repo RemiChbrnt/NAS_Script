@@ -3,7 +3,7 @@ import Router
 import Interface
 import Link
 from ipaddress import IPv4Address
-import sys
+from configuration_commands import Commands
 from tabulate import tabulate
 
 
@@ -103,3 +103,6 @@ def get_config():
 
 if __name__ == '__main__':
     routers, gns3_server, project_id, links = get_config()
+
+    # Now that we have the configuration, we can modify it
+    # We first modify all the links for the ip addresses to match those chosen
