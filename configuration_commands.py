@@ -1,6 +1,6 @@
 import time
 
-class Comandos:
+class Commands:
 
      def sendCommand(self, message: str):
         self.socket.send(f"{message}\r".encode('utf-8'))
