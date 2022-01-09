@@ -12,9 +12,8 @@ def init_config(router_i, config_file):
     config_file.write("\n!\nhostname {nom_hostname}\n!\nboot-start-marker\nboot-end-marker\n!\n!\n!\nno aaa new-model\nno ip icmp rate-limit unreachable\nip cef\n!\n!\n!\n!\n!\n!\nno ip domain lookup\n".format(nom_hostname= router_i.name))
     config_file.write("no ipv6 cef\n\n!\n!\nmultilink bundle-name authenticated \n!\n!\n!\n!\n!\n!\n!\n!\n!\nip tcp synwait-time 5\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n")
 
-def config_ip(interface_i, config_file):
-    #if confi_ospf
-    if config_ospf:
+def config_ip(interface_i, config_file, ospf): #ospf = boolean défini dans le json en entrée
+    if ospf:
         config_file.write("interface {interface_name} \n\rip address {ip_address} {mask} \n\rip ospf {num_area}\n\rnegotiation auto\n!\n").format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0", num_area = "4444 area 1")
     else:
         config_file.write("interface {interface_name} \n\rip address {ip_address} {mask}\n\rnegotiation auto\n!\n".format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0"))
@@ -24,8 +23,8 @@ def interface_unconnected(config_file, interface_i):
     config_file.write("interface {nom_interface}\n\rno ip address\n\rshutdown\n\rduplex full\n!".format(nom_interface = interface_i.name))
 
 
-def config_ospf(router_i, config_file):
-    if config_mpls:
+def config_ospf(router_i, config_file, mpls): #mpls = boolean défini dans le json en entrée
+    if mpls:
         config_file.write("router ospf {num_ospf}\n\rrouter-id {router_id}\n\rmpls ldp autoconfig\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
     else:
         config_file.write("router ospf {num_ospf}\n\rrouter-id {router_id}\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
