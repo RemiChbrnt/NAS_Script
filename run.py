@@ -9,49 +9,58 @@ from tabulate import tabulate
 
 def init_config(router_i, config_file):
     config_file.write("!\n!\n!\n\n!\n! Last configuration change at {time}\n!\nversion 15.2\nservice timestamps debug datetime msec\nservice timestamps log datetime msec".format(time = "09:34:45 UTC Thu Dec 2 2021"))
-    config_file.write("\n!\nhostname {nom_hostname}\n!\nboot-start-marker\nboot-end-marker\n!\n!\n!\nno aaa new-model\nno ip icmp rate-limit unreachable\nip cef\n!\n!\n!\n!\n!\n!\nno ip domain lookup\n".format(nom_hostname= "R2"))
-    config_file.write("no ipv6 cef\n\n!\n!\nmultilink bundle-name authenticated \n!\n!\n!\n!\n!\n!\n!\n!\n!\nip tcp synwait-time 5\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n"))
+    config_file.write("\n!\nhostname {nom_hostname}\n!\nboot-start-marker\nboot-end-marker\n!\n!\n!\nno aaa new-model\nno ip icmp rate-limit unreachable\nip cef\n!\n!\n!\n!\n!\n!\nno ip domain lookup\n".format(nom_hostname= router_i.name))
+    config_file.write("no ipv6 cef\n\n!\n!\nmultilink bundle-name authenticated \n!\n!\n!\n!\n!\n!\n!\n!\n!\nip tcp synwait-time 5\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n")
 
-def config_ip(router_i, config_file):
+def config_ip(interface_i, config_file):
     #if confi_ospf
     if config_ospf:
-        config_file.write("interface {interface_name} \n\rip address {ip_address} {mask} \n\rip ospf {num_area}\n\rnegotiation auto\n!\n").format(interface_name = "GigabitEthernet1/0", ip_address = "10.10.1.2", mask = "255.255.255.0", num_area = "4444 area 1")
+        config_file.write("interface {interface_name} \n\rip address {ip_address} {mask} \n\rip ospf {num_area}\n\rnegotiation auto\n!\n").format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0", num_area = "4444 area 1")
     else:
-        config_file.write("interface {interface_name} \n\rip address {ip_address} {mask}\n\rnegotiation auto\n!\n".format(interface_name = "GigabitEthernet1/0", ip_address = "10.10.1.2", mask = "255.255.255.0"))
+        config_file.write("interface {interface_name} \n\rip address {ip_address} {mask}\n\rnegotiation auto\n!\n".format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0"))
 
 
-def interface_unconnected(config_file, router_i):
-    config_file.write("interface {nom_interface}\n\rno ip address\n\rshutdown\n\rduplex full\n!".format(nom_interface = "COUCOU"))
+def interface_unconnected(config_file, interface_i):
+    config_file.write("interface {nom_interface}\n\rno ip address\n\rshutdown\n\rduplex full\n!".format(nom_interface = interface_i.name))
 
 
 def config_ospf(router_i, config_file):
     if config_mpls:
-        config_file.write("router ospf {num_ospf}\n\rrouter-id {router_id}\n\rmpls ldp autoconfig\n!\n".format(num_ospf = "4444", router_id = {"2.2.2.2"}))
+        config_file.write("router ospf {num_ospf}\n\rrouter-id {router_id}\n\rmpls ldp autoconfig\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
     else:
-        config_file.write("router ospf {num_ospf}\n\rrouter-id {router_id}\n!\n".format(num_ospf = "4444", router_id = {"2.2.2.2"}))
+        config_file.write("router ospf {num_ospf}\n\rrouter-id {router_id}\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
 
-def config_bgp(router_i, config_file):
-    config_file.write("router bgp {as_number}\n\rbgp router-id {router_id}\n\rbgp log-neighbor-changes\n\rnetwork {router_id} mask 255.255.255.255\n".format(as_number = 7200, router_id="1.1.1.1"))
+def config_bgp(router_i, voisins_bgp, config_file): #voisins_bgp = liste des liens avec les routeurs voisins qui ont bgp
+    config_file.write("router bgp {as_number}\n\rbgp router-id {router_id}\n\rbgp log-neighbor-changes\n\rnetwork {router_id} mask 255.255.255.255\n".format(as_number = router_i.as_number, router_id=router_i.router_id))
   
     for voisins in voisins_bgp :
-        #si on a un/des voisins bgp dans notre as
-        if voisin_bgp_same_as :
-            #pour chaque voisin on écrit les lignes de config
-            config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n\rneighbor {ip_voisin} next-hop-self\n".format(ip_voisin = "10.10.1.2", as_number= 7200))
+        if voisins.side_a == router_i :
+            #si on a un/des voisins bgp dans notre as
+            if voisins.side_b.as_number == router_i.as_number :
+                #pour chaque voisin on écrit les lignes de config
+                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n\rneighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_b.ipv4, as_number= router_i.as_number))
 
-        #si on a un/des voisins bgp dans un autre as
-        if voisin_bgp_different_as :
-            config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = "10.10.11.2", as_number = 7300))
+            #si on a un/des voisins bgp dans un autre as
+            else :
+                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_b.ipv4, as_number = voisins.side_b.as_number))
+        elif voisins.side_b == router_i :
+            if voisins.side_a.as_number == router_i.as_number :
+                #pour chaque voisin on écrit les lignes de config
+                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n\rneighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_a.ipv4, as_number= router_i.as_number))
+
+            #si on a un/des voisins bgp dans un autre as
+            else :
+                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_a.ipv4, as_number = voisins.side_a.as_number))
 
     config_file.write("!\n")
 
     
-def end_config(router_i, config_file):
+def end_config(config_file):
     config_file.write("ip forward-protocol nd\n!\n!\nno ip http server\nno ip http secure-server\n!\n!\n!\n!\ncontrol-plane\n!\n!\nline con 0\n\r exec-timeout 0 0\n\r privilege level 15")
     config_file.write("\n\rlogging synchronous\n\rstopbits 1\nline aux 0\n\rexec-timeout 0 0\n\rprivilege level 15\n\rlogging synchronous\n\rstopbits 1\nline vty 0 4\n\rlogin\n!\n!\nend")
 
 def config_pc(pc_i, config_file):
-    config_file.write("set pcname PC{pc_number}\nip {ip_pc} {ip_router} {mask}".format(pc_number = 3, ip_pc = "10.10.12.2", ip_router = "10.10.12.1", mask = 24))
+    config_file.write("set pcname {pc_name}\nip {ip_pc} {ip_router} {mask}".format(pc_name = pc_i.name, ip_pc = "10.10.12.2", ip_router = "10.10.12.1", mask = 24)) #A COMPLETER QUAND DATACLASS TERMINAL FINIE
 
 
 def router_list(gns3_server, project_id):
