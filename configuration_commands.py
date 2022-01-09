@@ -70,6 +70,37 @@ class Commands:
             self.sendCommand(f"network {adReseau} mask {mask}")
          self.sendCommand("end")
 
+   # Filtrage BGP
+     def filtrageBGP(self, name, sourcePrefix, destinationPrefix, mapTag, sequenceNumber, sequenceNumber2, ipAddress):
+        self.configureTerminal()
+        self.sendCommand("ipv6 access-list {name}")
+        self.sendCommand(f"permit {sourcePrefix} {destinationPrefix} ")
+        self.sendCommand(f"route-map {mapTag} deny {sequenceNumber} ")
+        self.sendCommand(f"match ipv6 address {name} ")
+        self.sendCommand("exit")
+        self.sendCommand(f"route-map {mapTag} permit {sequenceNumber2} ")
+        self.sendCommand(f"neighbor {ipAddress} route-map {mapTag} in ")
+        
+     def filtragePath(self, name, mapTag, sequenceNumber, nrList, regexp, sequenceNumber2, ipAddress):
+        self.configureTerminal()       
+        self.sendCommand(f"route-map {mapTag} permit {sequenceNumber} ")
+         #(by default local pref is 100, so choose a value higher than this)
+        self.sendCommand(f"set local-preference 110 ")
+        self.sendCommand("exit")
+        self.sendCommand(f"neighbor {ipAddress} route-map {mapTag} in ")
+        self.sendCommand("exit")
          
+        self.sendCommand(f"ip as-path access-list{nrList} permit {regexp} ")
+        self.sendCommand(f"route-map {mapTag} deny {sequenceNumber} ")
+        self.sendCommand(f"match as-path {name} ")
+        self.sendCommand("exit")
+         #(by default, there is an unwritten route-map deny, so we need to force a permit)
+        self.sendCommand(f"route-map {mapTag} permit {sequenceNumber2} ")
+        self.sendCommand(f"neighbor {ipAddress} route-map {mapTag} out ")
 
 
+
+
+
+
+       
