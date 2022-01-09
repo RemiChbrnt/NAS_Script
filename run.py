@@ -178,7 +178,9 @@ if __name__ == '__main__':
         mpls = False
         bgp = False
 
-        fichier = open("edit_config.txt", "x")
+        for i in range(len(routers)) :
+            name = "edit_config%d.txt" % i
+            fichier = open(name, "w")
         init_config(router, fichier)
         for interface in router.interfaces :
 
@@ -193,7 +195,7 @@ if __name__ == '__main__':
                         isConnected = True
 
             if isConnected :
-                config_ip(interface, fichier, ospf) #remplacer True par boolean ospf parsé quand on aura le json
+                config_ip(interface, fichier, ospf) 
             else :
                 interface_unconnected(fichier, interface)
 
@@ -202,7 +204,11 @@ if __name__ == '__main__':
 
         if bgp :
             voisins_bgp = []
-            
+            #1) on ajoute nos liens de routeurs voisins qui ont bgp
+            for lien in links :
+                if lien.side_a.name == router.name or lien.side_b.name == router.name:
+                    # if lien.side_b a un bgp==True :
+                    voisins_bgp.append(lien)
             config_bgp(router, voisins_bgp, fichier)
 
         end_config(router, fichier)
