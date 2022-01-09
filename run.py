@@ -164,12 +164,53 @@ if __name__ == '__main__':
     # -----------------------------------------------------------------------
 
     # 1) ouvrir le fichier JSON qui contient les règles de configuration à appliquer au projet
-    # 2) Parser ce fichier et
-    # 3) pour chaque device, ouvrir un fichier texte pour ecrire le edit config
+
+    #json_file = open("config_json.txt", "r")
+
+    # 2) Parser ce fichier 
+    
+
+    # 3) Pour chaque device, ouvrir un fichier texte pour ecrire le edit config
+    for router in routers :
+
+        #Création des boolean qui indiqueront a chaque routeur la configuration à adapter
+        ospf = False
+        mpls = False
+        bgp = False
+
+        fichier = open("edit_config.txt", "x")
+        init_config(router, fichier)
+        for interface in router.interfaces :
+
+            isConnected = False
+            #Si notre interface est utilisée par un routeur qui est dans la liste links -> c'est une interface active
+            for lien in links :
+                if lien.side_a.name == router.name :
+                    if lien.int_a.name == interface :
+                        isConnected = True
+                if lien.side_b.name == router.name :
+                    if lien.int_b.name == interface :
+                        isConnected = True
+
+            if isConnected :
+                config_ip(interface, fichier, ospf) #remplacer True par boolean ospf parsé quand on aura le json
+            else :
+                interface_unconnected(fichier, interface)
+
+        if ospf :
+            config_ospf(router, fichier, mpls)
+
+        if bgp :
+            voisins_bgp = []
+            
+            config_bgp(router, voisins_bgp, fichier)
+
+        end_config(router, fichier)
+        fichier.close()
+
+    #A RAJOUTER : POUR CHAQUE TERMINAL AUSSI
+
     # 4) selon les informations du json appeler telle ou telle fonction de config et compléter le fichier editconfig 
     # 5) (Rémi) envoyer les fichiers editconfig dans gns3 au bon endroit
-
-    fichier = open("edit_config.txt", "x")
-
-    fichier.close()
+    
 
