@@ -1,4 +1,5 @@
 import gns3fy as gns3
+import os
 import Devices
 import Interface
 import Link
@@ -170,16 +171,20 @@ if __name__ == '__main__':
     # 2) Parser ce fichier 
 
     # 3) Pour chaque device, ouvrir un fichier texte pour ecrire le edit config
-    for router in routers:
+    for routerID in routers:
 
+        router = routers[routerID]
+        print("Writing config for router %s of id %s" % (router.name, routerID))
         # Création des boolean qui indiqueront a chaque routeur la configuration à adapter
         ospf = False
         mpls = False
         bgp = False
 
-        for i in range(len(routers)):
-            name = "edit_config%d.txt" % i
-            fichier = open(name, "w")
+        # Creating the res file if it doesn't exist
+        if not os.path.isdir("./res"):
+            os.mkdir("./res")
+        name = "res/edit_config%s.cfg" % router.name
+        fichier = open(name, "w")
         init_config(router, fichier)
         for interface in router.interfaces:
 
@@ -210,7 +215,7 @@ if __name__ == '__main__':
                     voisins_bgp.append(lien)
             config_bgp(router, voisins_bgp, fichier)
 
-        end_config(router, fichier)
+        end_config(fichier)
         fichier.close()
 
     # A RAJOUTER : POUR CHAQUE TERMINAL AUSSI
