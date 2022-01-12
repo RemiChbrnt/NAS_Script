@@ -39,7 +39,7 @@ class Routers(dict):
                 return router
 
     def add(self, router: Router):
-        self[router.name] = router
+        self[router.uid] = router
 
     def __getitem__(self, item) -> Router:
         return super().__getitem__(item)

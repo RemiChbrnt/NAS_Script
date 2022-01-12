@@ -2,7 +2,7 @@ import json
 from ipaddress import IPv4Address
 from dataclasses import dataclass
 import Interface
-import Router
+import Devices
 
 
 
@@ -12,8 +12,8 @@ class Link:
 
     network4: IPv4Address
 
-    side_a: Router.Router
-    side_b: Router.Router
+    side_a: Devices.Router
+    side_b: Devices.Router
 
     int_a: Interface.Interface
     int_b: Interface.Interface

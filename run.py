@@ -1,5 +1,6 @@
 import gns3fy as gns3
-import Router
+import os
+import Devices
 import Interface
 import Link
 from ipaddress import IPv4Address
@@ -7,8 +8,63 @@ from configuration_commands import Commands
 from tabulate import tabulate
 
 
+def init_config(router_i, config_file):
+    config_file.write("!\n!\n!\n\n!\n! Last configuration change at {time}\n!\nversion 15.2\nservice timestamps debug datetime msec\nservice timestamps log datetime msec".format(time = "09:34:45 UTC Thu Dec 2 2021"))
+    config_file.write("\n!\nhostname {nom_hostname}\n!\nboot-start-marker\nboot-end-marker\n!\n!\n!\nno aaa new-model\nno ip icmp rate-limit unreachable\nip cef\n!\n!\n!\n!\n!\n!\nno ip domain lookup\n".format(nom_hostname = router_i.name))
+    config_file.write("no ipv6 cef\n\n!\n!\nmultilink bundle-name authenticated \n!\n!\n!\n!\n!\n!\n!\n!\n!\nip tcp synwait-time 5\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n")
+
+def config_ip(interface_i, config_file, ospf): #ospf = boolean défini dans le json en entrée
+    if ospf:
+        config_file.write("interface {interface_name} \n\rip address {ip_address} {mask} \n\rip ospf {num_area}\n\rnegotiation auto\n!\n").format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0", num_area = "4444 area 1")
+    else:
+        config_file.write("interface {interface_name} \n\rip address {ip_address} {mask}\n\rnegotiation auto\n!\n".format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0"))
+
+
+def interface_unconnected(config_file, interface_i):
+    config_file.write("interface {nom_interface}\n\rno ip address\n\rshutdown\n\rduplex full\n!".format(nom_interface = interface_i.name))
+
+
+def config_ospf(router_i, config_file, mpls): #mpls = boolean défini dans le json en entrée
+    if mpls:
+        config_file.write("router ospf {num_ospf}\n\rrouter-id {router_id}\n\rmpls ldp autoconfig\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
+    else:
+        config_file.write("router ospf {num_ospf}\n\rrouter-id {router_id}\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
+
+def config_bgp(router_i, voisins_bgp, config_file): #voisins_bgp = liste des liens avec les routeurs voisins qui ont bgp
+    config_file.write("router bgp {as_number}\n\rbgp router-id {router_id}\n\rbgp log-neighbor-changes\n\rnetwork {router_id} mask 255.255.255.255\n".format(as_number = router_i.as_number, router_id=router_i.router_id))
+  
+    for voisins in voisins_bgp :
+        if voisins.side_a == router_i :
+            #si on a un/des voisins bgp dans notre as
+            if voisins.side_b.as_number == router_i.as_number :
+                #pour chaque voisin on écrit les lignes de config
+                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n\rneighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_b.ipv4, as_number= router_i.as_number))
+
+            #si on a un/des voisins bgp dans un autre as
+            else :
+                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_b.ipv4, as_number = voisins.side_b.as_number))
+        elif voisins.side_b == router_i :
+            if voisins.side_a.as_number == router_i.as_number :
+                #pour chaque voisin on écrit les lignes de config
+                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n\rneighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_a.ipv4, as_number= router_i.as_number))
+
+            #si on a un/des voisins bgp dans un autre as
+            else :
+                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_a.ipv4, as_number = voisins.side_a.as_number))
+
+    config_file.write("!\n")
+
+    
+def end_config(config_file):
+    config_file.write("ip forward-protocol nd\n!\n!\nno ip http server\nno ip http secure-server\n!\n!\n!\n!\ncontrol-plane\n!\n!\nline con 0\n\r exec-timeout 0 0\n\r privilege level 15")
+    config_file.write("\n\rlogging synchronous\n\rstopbits 1\nline aux 0\n\rexec-timeout 0 0\n\rprivilege level 15\n\rlogging synchronous\n\rstopbits 1\nline vty 0 4\n\rlogin\n!\n!\nend")
+
+def config_pc(pc_i, config_file):
+    config_file.write("set pcname {pc_name}\nip {ip_pc} {ip_router} {mask}".format(pc_name = pc_i.name, ip_pc = "10.10.12.2", ip_router = "10.10.12.1", mask = 24)) #A COMPLETER QUAND DATACLASS TERMINAL FINIE
+
+
 def router_list(gns3_server, project_id):
-    routers = Router.Routers()
+    routers = Devices.Routers()
 
     router_i = 1  # Router id
     as_number = 7100  # As Number for all our Routers (we suppose that the config is our intern network)
@@ -19,7 +75,7 @@ def router_list(gns3_server, project_id):
         if obj.node_type == 'dynamips':
             # Creating our Router data object and adding it to the list
             # Our IPV4 address is initialized by default and is worthless, we modify it later
-            routers.add(Router.Router.from_node(obj, str(IPv4Address(router_i)), as_number=as_number))
+            routers.add(Devices.Router.from_node(obj, str(IPv4Address(router_i)), as_number=as_number))
             router_i += 1
     return routers
 
@@ -106,3 +162,65 @@ if __name__ == '__main__':
 
     # Now that we have the configuration, we can modify it
     # We first modify all the links for the ip addresses to match those chosen
+    # -----------------------------------------------------------------------
+
+    # 1) ouvrir le fichier JSON qui contient les règles de configuration à appliquer au projet
+
+    # json_file = open("config_json.txt", "r")
+
+    # 2) Parser ce fichier 
+
+    # 3) Pour chaque device, ouvrir un fichier texte pour ecrire le edit config
+    for routerID in routers:
+
+        router = routers[routerID]
+        print("Writing config for router %s of id %s" % (router.name, routerID))
+        # Création des boolean qui indiqueront a chaque routeur la configuration à adapter
+        ospf = False
+        mpls = False
+        bgp = False
+
+        # Creating the res file if it doesn't exist
+        if not os.path.isdir("./res"):
+            os.mkdir("./res")
+        name = "res/edit_config%s.cfg" % router.name
+        fichier = open(name, "w")
+        init_config(router, fichier)
+        for interface in router.interfaces:
+
+            isConnected = False
+            # Si notre interface est utilisée par un routeur qui est dans la liste links -> c'est une interface active
+            for lien in links :
+                if lien.side_a.name == router.name:
+                    if lien.int_a.name == interface:
+                        isConnected = True
+                if lien.side_b.name == router.name:
+                    if lien.int_b.name == interface:
+                        isConnected = True
+
+            if isConnected:
+                config_ip(interface, fichier, ospf) 
+            else:
+                interface_unconnected(fichier, interface)
+
+        if ospf:
+            config_ospf(router, fichier, mpls)
+
+        if bgp:
+            voisins_bgp = []
+            # 1) on ajoute nos liens de routeurs voisins qui ont bgp
+            for lien in links:
+                if lien.side_a.name == router.name or lien.side_b.name == router.name:
+                    # if lien.side_b a un bgp==True :
+                    voisins_bgp.append(lien)
+            config_bgp(router, voisins_bgp, fichier)
+
+        end_config(fichier)
+        fichier.close()
+
+    # A RAJOUTER : POUR CHAQUE TERMINAL AUSSI
+
+    # 4) selon les informations du json appeler telle ou telle fonction de config et compléter le fichier editconfig 
+    # 5) (Rémi) envoyer les fichiers editconfig dans gns3 au bon endroit
+    
+
