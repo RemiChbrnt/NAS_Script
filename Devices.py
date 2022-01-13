@@ -7,28 +7,29 @@ from gns3fy import Node
 
 
 @dataclass
-class Router:
+class Device:
     name: str
     x: int
     y: int
     uid: str
-    router_id: str
     as_number: int
-
-    console_host: str
-    console_port: int
 
     interfaces: list[Interface.Interface]
 
+@dataclass(init=False)
+
+@dataclass
+class Router(Device):
+    router_id: str
+    as_number: int
+
     def __post_init__(self):
         print(f"Routeur {self.name}, pos {self.x} : {self.y}")
-
 
     @staticmethod
     def from_node(node: Node, ri, as_number):
         return Router(name=node.name,
                       x=node.x, y=node.y, uid=node.node_id,
-                      console_host=node.console_host, console_port=node.console,
                       router_id=ri, interfaces=[], as_number=as_number)
 
 
@@ -40,6 +41,3 @@ class Routers(dict):
 
     def add(self, router: Router):
         self[router.uid] = router
-
-    def __getitem__(self, item) -> Router:
-        return super().__getitem__(item)

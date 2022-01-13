@@ -15,49 +15,49 @@ def init_config(router_i, config_file):
 
 def config_ip(interface_i, config_file, ospf): #ospf = boolean défini dans le json en entrée
     if ospf:
-        config_file.write("interface {interface_name} \n\rip address {ip_address} {mask} \n\rip ospf {num_area}\n\rnegotiation auto\n!\n").format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0", num_area = "4444 area 1")
+        config_file.write("interface {interface_name} \n ip address {ip_address} {mask} \n ip ospf {num_area}\n negotiation auto\n!\n".format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0", num_area = "4444 area 1"))
     else:
-        config_file.write("interface {interface_name} \n\rip address {ip_address} {mask}\n\rnegotiation auto\n!\n".format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0"))
+        config_file.write("interface {interface_name} \n ip address {ip_address} {mask}\n negotiation auto\n!\n".format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0"))
 
 
 def interface_unconnected(config_file, interface_i):
-    config_file.write("interface {nom_interface}\n\rno ip address\n\rshutdown\n\rduplex full\n!".format(nom_interface = interface_i.name))
+    config_file.write("interface {nom_interface}\n no ip address\n shutdown\n duplex full\n!".format(nom_interface = interface_i.name))
 
 
 def config_ospf(router_i, config_file, mpls): #mpls = boolean défini dans le json en entrée
     if mpls:
-        config_file.write("router ospf {num_ospf}\n\rrouter-id {router_id}\n\rmpls ldp autoconfig\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
+        config_file.write("router ospf {num_ospf}\n router-id {router_id}\n mpls ldp autoconfig\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
     else:
-        config_file.write("router ospf {num_ospf}\n\rrouter-id {router_id}\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
+        config_file.write("router ospf {num_ospf}\n router-id {router_id}\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
 
 def config_bgp(router_i, voisins_bgp, config_file): #voisins_bgp = liste des liens avec les routeurs voisins qui ont bgp
-    config_file.write("router bgp {as_number}\n\rbgp router-id {router_id}\n\rbgp log-neighbor-changes\n\rnetwork {router_id} mask 255.255.255.255\n".format(as_number = router_i.as_number, router_id=router_i.router_id))
+    config_file.write("router bgp {as_number}\n bgp router-id {router_id}\n bgp log-neighbor-changes\n network {router_id} mask 255.255.255.255\n".format(as_number = router_i.as_number, router_id=router_i.router_id))
   
     for voisins in voisins_bgp :
         if voisins.side_a == router_i :
             #si on a un/des voisins bgp dans notre as
             if voisins.side_b.as_number == router_i.as_number :
                 #pour chaque voisin on écrit les lignes de config
-                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n\rneighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_b.ipv4, as_number= router_i.as_number))
+                config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n neighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_b.ipv4, as_number= router_i.as_number))
 
             #si on a un/des voisins bgp dans un autre as
             else :
-                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_b.ipv4, as_number = voisins.side_b.as_number))
+                config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_b.ipv4, as_number = voisins.side_b.as_number))
         elif voisins.side_b == router_i :
             if voisins.side_a.as_number == router_i.as_number :
                 #pour chaque voisin on écrit les lignes de config
-                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n\rneighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_a.ipv4, as_number= router_i.as_number))
+                config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n neighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_a.ipv4, as_number= router_i.as_number))
 
             #si on a un/des voisins bgp dans un autre as
             else :
-                config_file.write("\rneighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_a.ipv4, as_number = voisins.side_a.as_number))
+                config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_a.ipv4, as_number = voisins.side_a.as_number))
 
     config_file.write("!\n")
 
     
 def end_config(config_file):
-    config_file.write("ip forward-protocol nd\n!\n!\nno ip http server\nno ip http secure-server\n!\n!\n!\n!\ncontrol-plane\n!\n!\nline con 0\n\r exec-timeout 0 0\n\r privilege level 15")
-    config_file.write("\n\rlogging synchronous\n\rstopbits 1\nline aux 0\n\rexec-timeout 0 0\n\rprivilege level 15\n\rlogging synchronous\n\rstopbits 1\nline vty 0 4\n\rlogin\n!\n!\nend")
+    config_file.write("ip forward-protocol nd\n!\n!\nno ip http server\nno ip http secure-server\n!\n!\n!\n!\ncontrol-plane\n!\n!\nline con 0\n exec-timeout 0 0\n privilege level 15")
+    config_file.write("\n logging synchronous\n stopbits 1\nline aux 0\n exec-timeout 0 0\n privilege level 15\n logging synchronous\n stopbits 1\nline vty 0 4\n login\n!\n!\nend")
 
 def config_pc(pc_i, config_file):
     config_file.write("set pcname {pc_name}\nip {ip_pc} {ip_router} {mask}".format(pc_name = pc_i.name, ip_pc = "10.10.12.2", ip_router = "10.10.12.1", mask = 24)) #A COMPLETER QUAND DATACLASS TERMINAL FINIE
@@ -66,7 +66,8 @@ def config_pc(pc_i, config_file):
 def router_list(gns3_server, project_id):
     routers = Devices.Routers()
 
-    router_i = 1  # Router id
+    routerNum = 1+2**8+2**16+2**24  # Router id
+    vpcNum = 1
     as_number = 7100  # As Number for all our Routers (we suppose that the config is our intern network)
     for node in gns3_server.get_nodes(project_id):
         obj = gns3.Node(project_id=project_id, node_id=node['node_id'], connector=gns3_server)
@@ -75,8 +76,11 @@ def router_list(gns3_server, project_id):
         if obj.node_type == 'dynamips':
             # Creating our Router data object and adding it to the list
             # Our IPV4 address is initialized by default and is worthless, we modify it later
-            routers.add(Devices.Router.from_node(obj, str(IPv4Address(router_i)), as_number=as_number))
-            router_i += 1
+            routers.add(Devices.Router.from_node(obj, str(IPv4Address(routerNum)), as_number=as_number))
+            routerNum += 1+2**8+2**16+2**24
+        if obj.node_type == 'vpcs':
+            # Creating our VPC data object and adding it to the list
+            vpcNum += 1
     return routers
 
 
@@ -176,9 +180,9 @@ if __name__ == '__main__':
         router = routers[routerID]
         print("Writing config for router %s of id %s" % (router.name, routerID))
         # Création des boolean qui indiqueront a chaque routeur la configuration à adapter
-        ospf = False
-        mpls = False
-        bgp = False
+        ospf = True
+        mpls = True
+        bgp = True
 
         # Creating the res file if it doesn't exist
         if not os.path.isdir("./res"):
@@ -190,12 +194,12 @@ if __name__ == '__main__':
 
             isConnected = False
             # Si notre interface est utilisée par un routeur qui est dans la liste links -> c'est une interface active
-            for lien in links :
+            for lien in links:
                 if lien.side_a.name == router.name:
-                    if lien.int_a.name == interface:
+                    if lien.int_a.name == interface.name:
                         isConnected = True
                 if lien.side_b.name == router.name:
-                    if lien.int_b.name == interface:
+                    if lien.int_b.name == interface.name:
                         isConnected = True
 
             if isConnected:
