@@ -3,7 +3,7 @@ import time
 class Commands:
 
      def sendCommand(self, message: str):
-        self.socket.send(f"{message}\r".encode('utf-8'))
+        self.socket.send(f"{message} ".encode('utf-8'))
         time.sleep(0.1)  # Petite pause sinon on envoie les commandes t
 
     #Configuracion ipv4
