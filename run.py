@@ -97,12 +97,19 @@ def link_list(gns3_server, project_id, routers):
         if router_side_a is None or router_side_b is None:
             continue
 
+        # Defining the interfaces' names
+        int_a_name = "unnamed"
+        int_b_name = "unnamed"
+        if new_link.nodes[0]['label']['text'][0] == 'g':
+            int_a_name = "GigabitEthernet" + new_link.nodes[0]['label']['text'][1:]
+        if new_link.nodes[1]['label']['text'][0] == 'g':
+            int_b_name = "GigabitEthernet" + new_link.nodes[1]['label']['text'][1:]
         interface_a = Interface.Interface(
-            name=new_link.nodes[0]['label']['text'],
+            name=int_a_name,
             ipv4=IPv4Address(ipv4 + 1),
         )
         interface_b = Interface.Interface(
-            name=new_link.nodes[1]['label']['text'],
+            name=int_b_name,
             ipv4=IPv4Address(ipv4 + 2),
         )
 
