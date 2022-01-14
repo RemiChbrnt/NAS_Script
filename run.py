@@ -1,12 +1,19 @@
 import gns3fy as gns3
 import os
+import json
 import Devices
 import Interface
 import Link
 from ipaddress import IPv4Address
 from configuration_commands import Commands
-from tabulate import tabulate
+OPERATOR_FILE = 'json_file.json'
 
+def jsonParse():
+    objects = ""
+    for line in open(OPERATOR_FILE):
+        objects += line
+    obj_dict = json.loads(objects)
+    print(obj_dict)
 
 def init_config(router_i, config_file):
     config_file.write("!\n!\n!\n\n!\n! Last configuration change at {time}\n!\nversion 15.2\nservice timestamps debug datetime msec\nservice timestamps log datetime msec".format(time = "09:34:45 UTC Thu Dec 2 2021"))
@@ -169,6 +176,9 @@ def get_config():
 
 
 if __name__ == '__main__':
+
+    jsonParse()
+
     routers, gns3_server, project_id, links = get_config()
 
     # Now that we have the configuration, we can modify it

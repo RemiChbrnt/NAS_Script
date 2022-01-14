@@ -5,8 +5,7 @@
       "neighbor" : [
         {
           "as_number": 7300,
-          "priority": "client",
-
+          "priority": "client"
         }
       ]
     }
@@ -17,25 +16,24 @@
       "neighbor" : [
         {
           "as_number": 7100,
-          "priority": "client",
-
+          "priority": "client"
         }
       ]
     }
   ],
   "R3": [
     {
-      "bgp": "False",
+      "bgp": "False"
     }
   ],
   "R4": [
     {
-      "bgp": "False",
+      "bgp": "False"
     }
   ],
   "R9": [
     {
-     "bgp": "False",
+     "bgp": "False"
     }
   ]
 }
