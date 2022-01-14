@@ -1,0 +1,42 @@
+{
+  "R1": [
+    {
+      "bgp": "True",
+      "neighbor" : [
+        {
+          "as_number": 7300,
+          "priority": "client",
+
+        }
+      ]
+    }
+  ],
+  "R2": [
+    {
+      "bgp": "True",
+      "neighbor" : [
+        {
+          "as_number": 7100,
+          "priority": "client",
+
+        }
+      ]
+    }
+  ],
+  "R3": [
+    {
+      "bgp": "False",
+    }
+  ],
+  "R4": [
+    {
+      "bgp": "False",
+    }
+  ],
+  "R9": [
+    {
+     "bgp": "False",
+    }
+  ]
+}
+  
