@@ -56,9 +56,20 @@ def config_ospf(router_i, config_file, mpls): # mpls = boolean défini dans le j
         config_file.write("router ospf {num_ospf}\n router-id {router_id}\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
 
 
-def config_ibgp(router_i, voisins_bgp, config_file): # voisins_bgp = liste des liens avec les routeurs de la même AS qui ont bgp
+def config_ibgp(router_i, voisins_bgp, config_file, config): # voisins_bgp = liste des liens avec les routeurs de la même AS qui ont bgp
     config_file.write("router bgp {as_number}\n bgp router-id {router_id}\n bgp log-neighbor-changes\n network {router_id} mask 255.255.255.255\n".format(as_number = router_i.as_number, router_id=router_i.router_id))
-  
+
+    # Advertising the necessary networks
+    for rtr in config:  # Check for all routers
+        if "neighbor" in config[rtr]:
+            if rtr == router_i.name:    # This is the router we are configuring
+                for neighbor in config[rtr]["neighbor"]:
+                    config_file.write(" network {network} mask 255.255.255.0\n".format(network=config[rtr]["neighbor"][neighbor]["network"]))
+            else:   # We are in another router of our network (not the one being configured)
+                for neighbor in config[rtr]["neighbor"]:
+                    for network in config[rtr]["neighbor"][neighbor]["advertised"]:
+                        config_file.write(" network {network} mask 255.255.255.0\n".format(network=network))
+
     for voisins in voisins_bgp : # Les routeurs configures ici sont tous dans notre AS, on est en ibgp
         if voisins.side_a == router_i :
             # Pour chaque voisin on écrit les lignes de config
@@ -287,8 +298,8 @@ if __name__ == '__main__':
                     if lien.side_b.name == router.name and "bgp" in config[lien.side_a.name]:
                         if config[lien.side_a.name]["bgp"]:     # If bgp is set to True
                             bgpNeighbors.append(lien)
-            config_ibgp(router, bgpNeighbors, fichier_res)
-            config_ibgp(router, bgpNeighbors, file_conf)
+            config_ibgp(router, bgpNeighbors, fichier_res, config)
+            config_ibgp(router, bgpNeighbors, file_conf, config)
             config_ebgp(router, ebgpNeighbors, fichier_res)
             config_ebgp(router, ebgpNeighbors, file_conf)
             fichier_res.write("!\n")
