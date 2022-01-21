@@ -183,21 +183,16 @@ if __name__ == '__main__':
     routers, gns3_server, project_id, project_path, links = get_config()
 
     print(project_path)
-    # Now that we have the configuration, we can modify it
-    # We first modify all the links for the ip addresses to match those chosen
-    # -----------------------------------------------------------------------
 
-    # 1) ouvrir le fichier JSON qui contient les règles de configuration à appliquer au projet
-
-    # json_file = open("config_json.txt", "r")
-
-    # 2) Parser ce fichier 
-
-    # 3) Pour chaque device, ouvrir un fichier texte pour ecrire le edit config
     for routerID in routers:
 
         router = routers[routerID]
         print("Writing config for router %s of id %s" % (router.name, routerID))
+
+        if router.name in config:      # If the router is a client, we suppose it is already configured and that this configuration is known
+            if "client" in config[router.name]:
+                if config[router.name]["client"]:
+                    continue
 
         ospf = True
         mpls = True
