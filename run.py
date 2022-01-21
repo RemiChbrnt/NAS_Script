@@ -204,7 +204,6 @@ if __name__ == '__main__':
         neighborList = []
 
         if router.name in config:
-            print(config[router.name])
             if "bgp" in config[router.name]:
                 bgp = config[router.name]["bgp"]
             if "neighbor" in config[router.name]:
@@ -240,6 +239,7 @@ if __name__ == '__main__':
             config_ospf(router, fichier, mpls)
 
         if bgp:
+            print ("Bgp is on for " + router.name)
             bgpNeighbors = []
             # 1) on ajoute nos liens de routeurs voisins qui ont bgp
             for lien in links:

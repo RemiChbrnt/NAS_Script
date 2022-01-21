@@ -1,6 +1,6 @@
 {
   "R1": {
-      "bgp": "True",
+      "bgp": true,
       "neighbor" :
         {
           "as_number": 7300,
@@ -8,7 +8,7 @@
         }
   },
   "R2": {
-      "bgp": "True",
+      "bgp": true,
       "neighbor" :
       {
           "as_number": 7100,
@@ -17,15 +17,15 @@
     },
   "R3":
     {
-      "bgp": "False"
+      "bgp": false
     },
   "R4":
     {
-      "bgp": "False"
+      "bgp": false
     },
   "R9":
     {
-     "bgp": "False"
+     "bgp": false
     }
 }
   
