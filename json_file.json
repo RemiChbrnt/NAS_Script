@@ -2,24 +2,28 @@
   "R1": {
       "client": false,
       "bgp": true,
-      "neighbor" :[
-        {
+      "neighbor" : {
+        "R6": {
           "as_number": 7300,
-          "ipv4": "10.10.11.2",
+          "interface": "GigabitEthernet3/0",
+          "ourIpv4": "10.10.11.1",
+          "hisIpv4": "10.10.11.2",
           "priority": "client"
         }
-      ]
-  },
+      }
+    },
   "R2": {
       "client": false,
       "bgp": true,
-      "neighbor" :[
-      {
+      "neighbor" : {
+        "R5": {
           "as_number": 7100,
-          "ipv4": "10.10.9.2",
+          "interface": "GigabitEthernet3/0",
+          "ourIpv4": "10.10.9.1",
+          "hisIpv4": "10.10.9.2",
           "priority": "client"
         }
-      ]
+      }
     },
   "R3":
     {

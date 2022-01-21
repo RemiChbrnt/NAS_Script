@@ -8,6 +8,7 @@ from ipaddress import IPv4Address
 from configuration_commands import Commands
 OPERATOR_FILE = 'json_file.json'
 
+
 # Method to parse the JSON config and convert it into a Python dictionary
 def jsonParse():
     objects = ""
@@ -16,16 +17,32 @@ def jsonParse():
     obj_dict = json.loads(objects)
     return obj_dict
 
-def init_config(router_i, config_file):
-    config_file.write("!\n!\n!\n\n!\n! Last configuration change at {time}\n!\nversion 15.2\nservice timestamps debug datetime msec\nservice timestamps log datetime msec".format(time = "09:34:45 UTC Thu Dec 2 2021"))
-    config_file.write("\n!\nhostname {nom_hostname}\n!\nboot-start-marker\nboot-end-marker\n!\n!\n!\nno aaa new-model\nno ip icmp rate-limit unreachable\nip cef\n!\n!\n!\n!\n!\n!\nno ip domain lookup\n".format(nom_hostname = router_i.name))
-    config_file.write("no ipv6 cef\n!\n!\nmultilink bundle-name authenticated \n!\n!\n!\n!\n!\n!\n!\n!\n!\nip tcp synwait-time 5\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\ninterface FastEthernet0/0\n no ip address\n shutdown\n duplex full\n!\n")
 
-def config_ip(interface_i, config_file, ospf): # ospf = boolean défini dans le json en entrée
+def init_config(router_i, config_file):
+    config_file.write("!\n!\n!\n\n!\n! Last configuration change at {time}\n!\nversion 15.2\nservice timestamps debug "
+                      "datetime msec\nservice timestamps log datetime msec".format(time = "09:34:45 UTC Thu Dec 2 "
+                                                                                          "2021"))
+    config_file.write("\n!\nhostname {nom_hostname}\n!\nboot-start-marker\nboot-end-marker\n!\n!\n!\nno aaa "
+                      "new-model\nno ip icmp rate-limit unreachable\nip cef\n!\n!\n!\n!\n!\n!\nno ip domain "
+                      "lookup\n".format(nom_hostname = router_i.name))
+    config_file.write("no ipv6 cef\n!\n!\nmultilink bundle-name authenticated \n!\n!\n!\n!\n!\n!\n!\n!\n!\nip tcp "
+                      "synwait-time 5\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\ninterface FastEthernet0/0\n no ip "
+                      "address\n shutdown\n duplex full\n!\n")
+
+
+def config_ip(router_i, interface_i, config_file, ospf, config): # ospf = boolean défini dans le json en entrée
     if ospf:
-        config_file.write("interface {interface_name} \n ip address {ip_address} {mask} \n ip ospf {num_area}\n negotiation auto\n!\n".format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0", num_area = "4444 area 1"))
-    else:
-        config_file.write("interface {interface_name} \n ip address {ip_address} {mask}\n negotiation auto\n!\n".format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0"))
+        if "neighbor" in config[router_i.name]:
+            for neighbor in config[router_i.name]["neighbor"]:
+                if config[router_i.name]["neighbor"][neighbor]["interface"] == interface_i.name:  # The link is eBGP, we don't have ospf in the config
+                    config_file.write(
+                        "interface {interface_name} \n ip address {ip_address} {mask}\n negotiation auto\n!\n".format(
+                            interface_name=config[router_i.name]["neighbor"][neighbor]["interface"], ip_address=config[router_i.name]["neighbor"][neighbor]["ourIpv4"], mask="255.255.255.0"))
+                else:
+                    config_file.write("interface {interface_name} \n ip address {ip_address} {mask} \n ip ospf {"
+                                      "num_area}\n negotiation auto\n!\n".format(interface_name = interface_i.name,
+                                                                                 ip_address = interface_i.ipv4,
+                                                                                 mask = "255.255.255.0", num_area = "4444 area 1"))
 
 
 def interface_unconnected(config_file, interface_i):
@@ -38,31 +55,24 @@ def config_ospf(router_i, config_file, mpls): # mpls = boolean défini dans le j
     else:
         config_file.write("router ospf {num_ospf}\n router-id {router_id}\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
 
-def config_bgp(router_i, voisins_bgp, config_file): # voisins_bgp = liste des liens avec les routeurs voisins qui ont bgp
+
+def config_ibgp(router_i, voisins_bgp, config_file): # voisins_bgp = liste des liens avec les routeurs de la même AS qui ont bgp
     config_file.write("router bgp {as_number}\n bgp router-id {router_id}\n bgp log-neighbor-changes\n network {router_id} mask 255.255.255.255\n".format(as_number = router_i.as_number, router_id=router_i.router_id))
   
-    for voisins in voisins_bgp :
+    for voisins in voisins_bgp : # Les routeurs configures ici sont tous dans notre AS, on est en ibgp
         if voisins.side_a == router_i :
-            # si on a un/des voisins bgp dans notre as
-            if voisins.side_b.as_number == router_i.as_number :
-                # Pour chaque voisin on écrit les lignes de config
-                config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n neighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_b.ipv4, as_number= router_i.as_number))
+            # Pour chaque voisin on écrit les lignes de config
+            config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_b.ipv4, as_number= router_i.as_number))
 
-            # Si on a un/des voisins bgp dans un autre as
-            else :
-                config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_b.ipv4, as_number = voisins.side_b.as_number))
         elif voisins.side_b == router_i :
-            if voisins.side_a.as_number == router_i.as_number :
-                # Pour chaque voisin on écrit les lignes de config
-                config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n neighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_a.ipv4, as_number= router_i.as_number))
+            # Pour chaque voisin on écrit les lignes de config
+            config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_a.ipv4, as_number= router_i.as_number))
 
-            # Si on a un/des voisins bgp dans un autre as
-            else :
-                config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_a.ipv4, as_number = voisins.side_a.as_number))
 
-    config_file.write("!\n")
+def config_ebgp(router_i, ebgpNeighbors, config_file):  # ebgpNeighbors = liste des routeurs voisins d'une AS différente
+    for neighbor in ebgpNeighbors:
+        config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"], as_number=ebgpNeighbors[neighbor]["as_number"]))
 
-    
 def end_config(config_file):
     config_file.write("ip forward-protocol nd\n!\n!\nno ip http server\nno ip http secure-server\n!\n!\n!\n!\ncontrol-plane\n!\n!\nline con 0\n exec-timeout 0 0\n privilege level 15")
     config_file.write("\n logging synchronous\n stopbits 1\nline aux 0\n exec-timeout 0 0\n privilege level 15\n logging synchronous\n stopbits 1\nline vty 0 4\n login\n!\n!\nend")
@@ -121,6 +131,7 @@ def link_list(gns3_server, project_id, routers):
             ipv4=IPv4Address(ipv4 + 2),
         )
 
+        # Appending the interfaces to the routers
         router_side_a.interfaces.append(interface_a)
         router_side_b.interfaces.append(interface_b)
 
@@ -133,9 +144,8 @@ def link_list(gns3_server, project_id, routers):
             int_b=interface_b,
         )
         ipv4 += 4  # In order to have a 0 at the end of the Network address
-        # print("link list" + str(link_ab))
 
-        # Adds the interfaces to the routers
+        # print("link list" + str(link_ab))
 
         links.append(link_ab)
     for lien in links:
@@ -143,7 +153,7 @@ def link_list(gns3_server, project_id, routers):
     return links
 
 
-def get_config():
+def get_config(config):
     def check_opened(project_list):
         if (project_list['status'] == 'opened'):
             return True
@@ -180,7 +190,7 @@ if __name__ == '__main__':
 
     config = jsonParse()
 
-    routers, gns3_server, project_id, project_path, links = get_config()
+    routers, gns3_server, project_id, project_path, links = get_config(config)
 
     print(project_path)
 
@@ -197,13 +207,13 @@ if __name__ == '__main__':
         ospf = True
         mpls = True
         bgp = False
-        neighborList = []
+        ebgpNeighbors = []
 
         if router.name in config:
             if "bgp" in config[router.name]:
                 bgp = config[router.name]["bgp"]
             if "neighbor" in config[router.name]:
-                neighborList = config[router.name]["neighbor"]
+                ebgpNeighbors = config[router.name]["neighbor"]
 
         # Creating the router config file if it doesn't exist
         router_config_path = project_path + "\project-files\dynamips\\" + router.uid + "\\configs"
@@ -231,8 +241,8 @@ if __name__ == '__main__':
                         isConnected = True
 
             if isConnected:
-                config_ip(interface, fichier_res, ospf)
-                config_ip(interface, file_conf, ospf)
+                config_ip(router, interface, fichier_res, ospf, config)
+                config_ip(router, interface, file_conf, ospf, config)
             else:
                 interface_unconnected(fichier_res, interface)
                 interface_unconnected(file_conf, interface)
@@ -254,9 +264,12 @@ if __name__ == '__main__':
                     if lien.side_b.name == router.name and "bgp" in config[lien.side_a.name]:
                         if config[lien.side_a.name]["bgp"]:     # If bgp is set to True
                             bgpNeighbors.append(lien)
-            config_bgp(router, bgpNeighbors, fichier_res)
-            config_bgp(router, bgpNeighbors, file_conf)
-
+            config_ibgp(router, bgpNeighbors, fichier_res)
+            config_ibgp(router, bgpNeighbors, file_conf)
+            config_ebgp(router, ebgpNeighbors, fichier_res)
+            config_ebgp(router, ebgpNeighbors, file_conf)
+            fichier_res.write("!\n")
+            file_conf.write("!\n")
 
         end_config(fichier_res)
         end_config(file_conf)
