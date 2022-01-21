@@ -173,15 +173,16 @@ def get_config():
     routers = router_list(gns3_server, project_id)
     links = link_list(gns3_server, project_id, routers)
 
-    return routers, gns3_server, project_id, links
+    return routers, gns3_server, project_id, project.path, links
 
 
 if __name__ == '__main__':
 
     config = jsonParse()
 
-    routers, gns3_server, project_id, links = get_config()
+    routers, gns3_server, project_id, project_path, links = get_config()
 
+    print(project_path)
     # Now that we have the configuration, we can modify it
     # We first modify all the links for the ip addresses to match those chosen
     # -----------------------------------------------------------------------
@@ -209,15 +210,19 @@ if __name__ == '__main__':
             if "neighbor" in config[router.name]:
                 neighborList = config[router.name]["neighbor"]
 
-
-
-
+        # Creating the router config file if it doesn't exist
+        router_config_path = project_path + "\project-files\dynamips\\" + router.uid + "\\configs"
+        if not os.path.isdir(router_config_path):
+            os.mkdir(router_config_path)
+        file_name = router_config_path + "\\i" + router.name[1:] + "_startup-config.cfg"
         # Creating the res file if it doesn't exist
         if not os.path.isdir("./res"):
             os.mkdir("./res")
         name = "res/edit_config%s.cfg" % router.name
-        fichier = open(name, "w")
-        init_config(router, fichier)
+        fichier_res = open(name, "w")
+        file_conf = open(file_name, "w")
+        init_config(router, fichier_res)
+        init_config(router, file_conf)
         for interface in router.interfaces:
 
             isConnected = False
@@ -231,12 +236,15 @@ if __name__ == '__main__':
                         isConnected = True
 
             if isConnected:
-                config_ip(interface, fichier, ospf) 
+                config_ip(interface, fichier_res, ospf)
+                config_ip(interface, file_conf, ospf)
             else:
-                interface_unconnected(fichier, interface)
-
+                interface_unconnected(fichier_res, interface)
+                interface_unconnected(file_conf, interface)
         if ospf:
-            config_ospf(router, fichier, mpls)
+            config_ospf(router, fichier_res, mpls)
+            config_ospf(router, file_conf, mpls)
+
 
         if bgp:
             print ("Bgp is on for " + router.name)
@@ -251,10 +259,15 @@ if __name__ == '__main__':
                     if lien.side_b.name == router.name and "bgp" in config[lien.side_a.name]:
                         if config[lien.side_a.name]["bgp"]:     # If bgp is set to True
                             bgpNeighbors.append(lien)
-            config_bgp(router, bgpNeighbors, fichier)
+            config_bgp(router, bgpNeighbors, fichier_res)
+            config_bgp(router, bgpNeighbors, file_conf)
 
-        end_config(fichier)
-        fichier.close()
+
+        end_config(fichier_res)
+        end_config(file_conf)
+
+        fichier_res.close()
+        file_conf.close()
 
     # A RAJOUTER : POUR CHAQUE TERMINAL AUSSI
 
