@@ -8,19 +8,20 @@ from ipaddress import IPv4Address
 from configuration_commands import Commands
 OPERATOR_FILE = 'json_file.json'
 
+# Method to parse the JSON config and convert it into a Python dictionary
 def jsonParse():
     objects = ""
     for line in open(OPERATOR_FILE):
         objects += line
     obj_dict = json.loads(objects)
-    print(obj_dict)
+    return obj_dict
 
 def init_config(router_i, config_file):
     config_file.write("!\n!\n!\n\n!\n! Last configuration change at {time}\n!\nversion 15.2\nservice timestamps debug datetime msec\nservice timestamps log datetime msec".format(time = "09:34:45 UTC Thu Dec 2 2021"))
     config_file.write("\n!\nhostname {nom_hostname}\n!\nboot-start-marker\nboot-end-marker\n!\n!\n!\nno aaa new-model\nno ip icmp rate-limit unreachable\nip cef\n!\n!\n!\n!\n!\n!\nno ip domain lookup\n".format(nom_hostname = router_i.name))
     config_file.write("no ipv6 cef\n\n!\n!\nmultilink bundle-name authenticated \n!\n!\n!\n!\n!\n!\n!\n!\n!\nip tcp synwait-time 5\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n")
 
-def config_ip(interface_i, config_file, ospf): #ospf = boolean défini dans le json en entrée
+def config_ip(interface_i, config_file, ospf): # ospf = boolean défini dans le json en entrée
     if ospf:
         config_file.write("interface {interface_name} \n ip address {ip_address} {mask} \n ip ospf {num_area}\n negotiation auto\n!\n".format(interface_name = interface_i.name, ip_address = interface_i.ipv4, mask = "255.255.255.0", num_area = "4444 area 1"))
     else:
@@ -31,31 +32,31 @@ def interface_unconnected(config_file, interface_i):
     config_file.write("interface {nom_interface}\n no ip address\n shutdown\n duplex full\n!".format(nom_interface = interface_i.name))
 
 
-def config_ospf(router_i, config_file, mpls): #mpls = boolean défini dans le json en entrée
+def config_ospf(router_i, config_file, mpls): # mpls = boolean défini dans le json en entrée
     if mpls:
         config_file.write("router ospf {num_ospf}\n router-id {router_id}\n mpls ldp autoconfig\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
     else:
         config_file.write("router ospf {num_ospf}\n router-id {router_id}\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
 
-def config_bgp(router_i, voisins_bgp, config_file): #voisins_bgp = liste des liens avec les routeurs voisins qui ont bgp
+def config_bgp(router_i, voisins_bgp, config_file): # voisins_bgp = liste des liens avec les routeurs voisins qui ont bgp
     config_file.write("router bgp {as_number}\n bgp router-id {router_id}\n bgp log-neighbor-changes\n network {router_id} mask 255.255.255.255\n".format(as_number = router_i.as_number, router_id=router_i.router_id))
   
     for voisins in voisins_bgp :
         if voisins.side_a == router_i :
-            #si on a un/des voisins bgp dans notre as
+            # si on a un/des voisins bgp dans notre as
             if voisins.side_b.as_number == router_i.as_number :
-                #pour chaque voisin on écrit les lignes de config
+                # Pour chaque voisin on écrit les lignes de config
                 config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n neighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_b.ipv4, as_number= router_i.as_number))
 
-            #si on a un/des voisins bgp dans un autre as
+            # Si on a un/des voisins bgp dans un autre as
             else :
                 config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_b.ipv4, as_number = voisins.side_b.as_number))
         elif voisins.side_b == router_i :
             if voisins.side_a.as_number == router_i.as_number :
-                #pour chaque voisin on écrit les lignes de config
+                # Pour chaque voisin on écrit les lignes de config
                 config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n neighbor {ip_voisin} next-hop-self\n".format(ip_voisin = voisins.int_a.ipv4, as_number= router_i.as_number))
 
-            #si on a un/des voisins bgp dans un autre as
+            # Si on a un/des voisins bgp dans un autre as
             else :
                 config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_a.ipv4, as_number = voisins.side_a.as_number))
 
@@ -177,7 +178,7 @@ def get_config():
 
 if __name__ == '__main__':
 
-    jsonParse()
+    config = jsonParse()
 
     routers, gns3_server, project_id, links = get_config()
 
@@ -196,10 +197,21 @@ if __name__ == '__main__':
 
         router = routers[routerID]
         print("Writing config for router %s of id %s" % (router.name, routerID))
-        # Création des boolean qui indiqueront a chaque routeur la configuration à adapter
+
         ospf = True
         mpls = True
-        bgp = True
+        bgp = False
+        neighborList = []
+
+        if router.name in config:
+            print(config[router.name])
+            if "bgp" in config[router.name]:
+                bgp = config[router.name]["bgp"]
+            if "neighbor" in config[router.name]:
+                neighborList = config[router.name]["neighbor"]
+
+
+
 
         # Creating the res file if it doesn't exist
         if not os.path.isdir("./res"):
@@ -228,13 +240,18 @@ if __name__ == '__main__':
             config_ospf(router, fichier, mpls)
 
         if bgp:
-            voisins_bgp = []
+            bgpNeighbors = []
             # 1) on ajoute nos liens de routeurs voisins qui ont bgp
             for lien in links:
-                if lien.side_a.name == router.name or lien.side_b.name == router.name:
-                    # if lien.side_b a un bgp==True :
-                    voisins_bgp.append(lien)
-            config_bgp(router, voisins_bgp, fichier)
+                if lien.side_b.name in config:
+                    if lien.side_a.name == router.name and "bgp" in config[lien.side_b.name]:
+                        if config[lien.side_b.name]["bgp"]:     # If bgp is set to True
+                            bgpNeighbors.append(lien)
+                if lien.side_a.name in config:
+                    if lien.side_b.name == router.name and "bgp" in config[lien.side_a.name]:
+                        if config[lien.side_a.name]["bgp"]:     # If bgp is set to True
+                            bgpNeighbors.append(lien)
+            config_bgp(router, bgpNeighbors, fichier)
 
         end_config(fichier)
         fichier.close()
