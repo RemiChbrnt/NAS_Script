@@ -19,7 +19,7 @@ def jsonParse():
 def init_config(router_i, config_file):
     config_file.write("!\n!\n!\n\n!\n! Last configuration change at {time}\n!\nversion 15.2\nservice timestamps debug datetime msec\nservice timestamps log datetime msec".format(time = "09:34:45 UTC Thu Dec 2 2021"))
     config_file.write("\n!\nhostname {nom_hostname}\n!\nboot-start-marker\nboot-end-marker\n!\n!\n!\nno aaa new-model\nno ip icmp rate-limit unreachable\nip cef\n!\n!\n!\n!\n!\n!\nno ip domain lookup\n".format(nom_hostname = router_i.name))
-    config_file.write("no ipv6 cef\n\n!\n!\nmultilink bundle-name authenticated \n!\n!\n!\n!\n!\n!\n!\n!\n!\nip tcp synwait-time 5\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n")
+    config_file.write("no ipv6 cef\n!\n!\nmultilink bundle-name authenticated \n!\n!\n!\n!\n!\n!\n!\n!\n!\nip tcp synwait-time 5\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\n!\ninterface FastEthernet0/0\n no ip address\n shutdown\n duplex full\n!\n")
 
 def config_ip(interface_i, config_file, ospf): # ospf = boolean défini dans le json en entrée
     if ospf:
@@ -76,7 +76,7 @@ def router_list(gns3_server, project_id):
 
     routerNum = 1+2**8+2**16+2**24  # Router id
     vpcNum = 1
-    as_number = 7100  # As Number for all our Routers (we suppose that the config is our intern network)
+    as_number = 7200  # As Number for all our Routers (we suppose that the config is our intern network)
     for node in gns3_server.get_nodes(project_id):
         obj = gns3.Node(project_id=project_id, node_id=node['node_id'], connector=gns3_server)
         obj.get()
