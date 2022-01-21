@@ -6,6 +6,7 @@
         "R6": {
           "as_number": 7300,
           "interface": "GigabitEthernet3/0",
+          "network": "10.10.11.0",
           "ourIpv4": "10.10.11.1",
           "hisIpv4": "10.10.11.2",
           "priority": "client"
@@ -19,6 +20,7 @@
         "R5": {
           "as_number": 7100,
           "interface": "GigabitEthernet3/0",
+          "network": "10.10.9.0",
           "ourIpv4": "10.10.9.1",
           "hisIpv4": "10.10.9.2",
           "priority": "client"

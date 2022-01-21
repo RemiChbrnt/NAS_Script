@@ -102,7 +102,7 @@ def router_list(gns3_server, project_id):
     return routers
 
 
-def link_list(gns3_server, project_id, routers):
+def link_list(gns3_server, project_id, routers, config):
     ipv4 = 3232235520  # 192.168.0.0
     links = []  # initializing list
     for gns3_link in gns3_server.get_links(project_id):
@@ -122,13 +122,36 @@ def link_list(gns3_server, project_id, routers):
             int_a_name = "GigabitEthernet" + new_link.nodes[0]['label']['text'][1:]
         if new_link.nodes[1]['label']['text'][0] == 'g':
             int_b_name = "GigabitEthernet" + new_link.nodes[1]['label']['text'][1:]
+
+        ipv4_a = IPv4Address(ipv4 + 1)
+        ipv4_b = IPv4Address(ipv4 + 2)
+        network = IPv4Address(ipv4)
+
+        eBGP_link = False
+        if "neighbor" in config[router_side_a.name]:    # Handling eBGP links
+            for neighbor in config[router_side_a.name]["neighbor"]:
+                if neighbor == router_side_b.name:  # We have an eBGP link
+                    ipv4_a = config[router_side_a.name]["neighbor"][neighbor]["ourIpv4"]
+                    ipv4_b = config[router_side_a.name]["neighbor"][neighbor]["hisIpv4"]
+                    network = config[router_side_a.name]["neighbor"][neighbor]["network"]
+                    eBGP_link = True
+        if "neighbor" in config[router_side_b.name]:  # Handling eBGP links
+            for neighbor in config[router_side_b.name]["neighbor"]:
+                if neighbor == router_side_a.name:  # We have an eBGP link
+                    ipv4_a = config[router_side_b.name]["neighbor"][neighbor]["ourIpv4"]
+                    ipv4_b = config[router_side_b.name]["neighbor"][neighbor]["hisIpv4"]
+                    network = config[router_side_b.name]["neighbor"][neighbor]["network"]
+                    eBGP_link = True
+        if eBGP_link == False:  # We have an internal link (no eBGP)
+            ipv4 += 4  # In order to have a 0 at the end of the Network address
+
         interface_a = Interface.Interface(
             name=int_a_name,
-            ipv4=IPv4Address(ipv4 + 1),
+            ipv4=ipv4_a,
         )
         interface_b = Interface.Interface(
             name=int_b_name,
-            ipv4=IPv4Address(ipv4 + 2),
+            ipv4=ipv4_b,
         )
 
         # Appending the interfaces to the routers
@@ -137,13 +160,13 @@ def link_list(gns3_server, project_id, routers):
 
         link_ab = Link.Link(
             uid=new_link.link_id,
-            network4=IPv4Address(ipv4),
+            network4=network,
             side_a=router_side_a,
             side_b=router_side_b,
             int_a=interface_a,
             int_b=interface_b,
         )
-        ipv4 += 4  # In order to have a 0 at the end of the Network address
+
 
         # print("link list" + str(link_ab))
 
@@ -181,7 +204,7 @@ def get_config(config):
     print(f"Name: {project.name} -- Status: {project.status} -- Is auto_closed?: {project.auto_close}")
 
     routers = router_list(gns3_server, project_id)
-    links = link_list(gns3_server, project_id, routers)
+    links = link_list(gns3_server, project_id, routers, config)
 
     return routers, gns3_server, project_id, project.path, links
 
@@ -192,7 +215,7 @@ if __name__ == '__main__':
 
     routers, gns3_server, project_id, project_path, links = get_config(config)
 
-    print(project_path)
+    # print(project_path)
 
     for routerID in routers:
 
