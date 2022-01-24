@@ -17,6 +17,25 @@ def jsonParse():
     obj_dict = json.loads(objects)
     return obj_dict
 
+def routemap_transport(config_file):
+    config_file.write("access-list 3 0.0.0.0 255.255.255.0\n!\nroute-map TRANSPORT permit 10\n match ip address 3\n set local-preference 50\n!\nroute-map TRANSPORT deny 20\n match community 2\n!\nroute-map TRANSPORT deny 30\n match community 3\n")
+
+def routemap_peer(config_file):
+    config_file.write("access-list 2 0.0.0.0 255.255.255.0\n!\nroute-map PEER permit 10\n match ip address 2\n set local-preference 100\n!\nroute-map PEER deny 20\n match community 3\n")
+
+def routemap_client(config_file):
+    config_file.write("access-list 1 0.0.0.0 255.255.255.0\n!\nroute-map CLIENT permit 10\n match ip address 1\n set local-preference 150\n")
+
+def communities(config_file, routers_bgp):
+    config_file.write("ip bgp-community new-format\n")
+    for asn in routers_bgp : 
+        if routers_bgp.priority == "client" :
+            config_file.write("ip community-list 1 permit {asnumber}:100".format(asnumber = asn))
+        elif routers_bgp.priority == "peer" :
+            config_file.write("ip community-list 2 permit {asnumber}:100".format(asnumber = asn))
+        elif routers_bgp.priority == "transport" :
+            config_file.write("ip community-list 3 permit {asnumber}:100".format(asnumber = asn))
+
 
 def init_config(router_i, config_file):
     config_file.write("!\n!\n!\n\n!\n! Last configuration change at {time}\n!\nversion 15.2\nservice timestamps debug "
@@ -83,9 +102,21 @@ def config_ibgp(router_i, voisins_bgp, config_file, config): # voisins_bgp = lis
 def config_ebgp(router_i, ebgpNeighbors, config_file):  # ebgpNeighbors = liste des routeurs voisins d'une AS différente
     for neighbor in ebgpNeighbors:
         config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"], as_number=ebgpNeighbors[neighbor]["as_number"]))
+        if neighbor.priority == "client":
+            config_file.write(" neighbor {ip_voisin} route-map CLIENT in\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"]))
+        elif neighbor.priority == "peer":
+            config_file.write(" neighbor {ip_voisin} route-map PEER in\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"]))
+        elif neighbor.priority == "transport":
+            config_file.write(" neighbor {ip_voisin} route-map TRANSPORT in\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"]))
 
-def end_config(config_file):
-    config_file.write("ip forward-protocol nd\n!\n!\nno ip http server\nno ip http secure-server\n!\n!\n!\n!\ncontrol-plane\n!\n!\nline con 0\n exec-timeout 0 0\n privilege level 15")
+def end1_config(config_file):
+    config_file.write("!\nip forward-protocol nd\n!")
+
+def end2_config(config_file):
+    config_file.write("!\nno ip http server\nno ip http secure-server\n!")
+    
+def end3_config(config_file):
+    config_file.write("!\n!\n!\ncontrol-plane\n!\n!\nline con 0\n exec-timeout 0 0\n privilege level 15")
     config_file.write("\n logging synchronous\n stopbits 1\nline aux 0\n exec-timeout 0 0\n privilege level 15\n logging synchronous\n stopbits 1\nline vty 0 4\n login\n!\n!\nend")
 
 def config_pc(pc_i, config_file):
@@ -305,15 +336,33 @@ if __name__ == '__main__':
             fichier_res.write("!\n")
             file_conf.write("!\n")
 
-        end_config(fichier_res)
-        end_config(file_conf)
+        end1_config(fichier_res) 
+        end1_config(file_conf)
+
+        if bgp :
+            communities(fichier_res, bgpNeighbors)
+            communities(file_conf, bgpNeighbors)
+
+        end2_config(fichier_res)         
+        end2_config(file_conf)
+
+        if bgp : #jsp comment ca marche tes fichiers res et conf
+            if ebgpNeighbors.priority == "client":
+                routemap_client(fichier_res)
+                routemap_client(file_conf)
+            elif ebgpNeighbors.priority == "peer":
+                routemap_peer(fichier_res)
+                routemap_peer(file_conf)
+            elif ebgpNeighbors.priority == "transport":
+                routemap_transport(fichier_res)
+                routemap_transport(file_conf)
+
+        end3_config(fichier_res)         
+        end3_config(file_conf)
 
         fichier_res.close()
         file_conf.close()
 
-    # A RAJOUTER : POUR CHAQUE TERMINAL AUSSI
 
-    # 4) selon les informations du json appeler telle ou telle fonction de config et compléter le fichier editconfig 
-    # 5) (Rémi) envoyer les fichiers editconfig dans gns3 au bon endroit
     
 
