@@ -1,42 +1,56 @@
 {
-  "R1": [
-    {
-      "bgp": "True",
-      "neighbor" : [
-        {
+  "R1": {
+      "client": false,
+      "bgp": true,
+      "neighbor" : {
+        "R6": {
           "as_number": 7300,
+          "interface": "GigabitEthernet3/0",
+          "network": "10.10.11.0",
+          "ourIpv4": "10.10.11.1",
+          "hisIpv4": "10.10.11.2",
           "priority": "client",
-
+          "advertised": ["10.10.12.0"]
         }
-      ]
-    }
-  ],
-  "R2": [
-    {
-      "bgp": "True",
-      "neighbor" : [
-        {
+      }
+    },
+  "R2": {
+      "client": false,
+      "bgp": true,
+      "neighbor" : {
+        "R5": {
           "as_number": 7100,
+          "interface": "GigabitEthernet3/0",
+          "network": "10.10.9.0",
+          "ourIpv4": "10.10.9.1",
+          "hisIpv4": "10.10.9.2",
           "priority": "client",
-
+          "advertised": ["10.10.10.0"]
         }
-      ]
-    }
-  ],
-  "R3": [
+      }
+    },
+  "R3":
     {
-      "bgp": "False",
-    }
-  ],
-  "R4": [
+      "client": false,
+      "bgp": false
+    },
+  "R4":
     {
-      "bgp": "False",
-    }
-  ],
-  "R9": [
+      "client": false,
+      "bgp": false
+    },
+  "R5":
     {
-     "bgp": "False",
+      "client": true
+    },
+  "R6":
+    {
+      "client": true
+    },
+  "R9":
+    {
+      "client": false,
+     "bgp": false
     }
-  ]
 }
   
