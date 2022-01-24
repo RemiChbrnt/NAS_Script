@@ -18,13 +18,13 @@ def jsonParse():
     return obj_dict
 
 def routemap_transport(config_file):
-    config_file.write("access-list 3 permit 0.0.0.0 255.255.255.0\n!\nroute-map TRANSPORT permit 10\n match ip address 3\n set local-preference 50\n!\nroute-map TRANSPORT deny 20\n match community 2\n!\nroute-map TRANSPORT deny 30\n match community 3\n")
+    config_file.write("access-list 3 permit 0.0.0.0 0.0.0.255\n!\nroute-map TRANSPORT permit 10\n match ip address 3\n set local-preference 50\n!\nroute-map TRANSPORT deny 20\n match community 2\n!\nroute-map TRANSPORT deny 30\n match community 3\n")
 
 def routemap_peer(config_file):
-    config_file.write("access-list 2 permit 0.0.0.0 255.255.255.0\n!\nroute-map PEER permit 10\n match ip address 2\n set local-preference 100\n!\nroute-map PEER deny 20\n match community 3\n")
+    config_file.write("access-list 2 permit 0.0.0.0 0.0.0.255\n!\nroute-map PEER permit 10\n match ip address 2\n set local-preference 100\n!\nroute-map PEER deny 20\n match community 3\n")
 
 def routemap_client(config_file):
-    config_file.write("access-list 1 permit 0.0.0.0 255.255.255.0\n!\nroute-map CLIENT permit 10\n match ip address 1\n set local-preference 150\n")
+    config_file.write("access-list 1 permit 0.0.0.0 0.0.0.255\n!\nroute-map CLIENT permit 10\n match ip address 1\n set local-preference 150\n")
 
 def communities(config_file, routers_bgp):
     config_file.write("ip bgp-community new-format\n")
