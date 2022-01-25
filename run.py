@@ -16,14 +16,15 @@ def jsonParse():
     obj_dict = json.loads(objects)
     return obj_dict
 
-def routemap_transport(config_file):
-    config_file.write("!\n!\nroute-map TRANSPORT permit 10\n match ip address 3\n set local-preference 50\n!\nroute-map TRANSPORT deny 20\n match community 2\n!\nroute-map TRANSPORT deny 30\n match community 3\n")
+def routemap_transport(config_file, community):
+    config_file.write(f"!\n!\nroute-map TRANSPORT_IN permit 10\n match community 10\n set local-preference 50\n set community {community}\n!\n")
+    config_file.write("route-map TRANSPORT_OUT permit 10\n match community 30\n continue\n!\n")
 
-def routemap_peer(config_file):
-    config_file.write("!\n!\nroute-map PEER permit 10\n match ip address 2\n set local-preference 100\n!\nroute-map PEER deny 20\n match community 3\n")
-
-def routemap_client(config_file):
-    config_file.write("!\n!\nroute-map CLIENT permit 10\n match ip address 1\n set local-preference 150\n")
+def routemap_peer(config_file, community):
+    config_file.write(f"!\n!\nroute-map PEER_IN permit 10\n match community 10\n set local-preference 100\n set community {community}\n!\n")
+    config_file.write("route-map PEER_OUT permit 10\n match community 30\n continue\n!\n")
+def routemap_client(config_file, community):
+    config_file.write(f"!\n!\nroute-map CLIENT permit 10\n match community 10\n set local-preference 150\n set community {community}")
 
 def communities(config_file, clients, ebgpNeighbors, config):
     config_file.write("ip community-list 10 permit internet\n")
@@ -370,15 +371,16 @@ if __name__ == '__main__':
 
         if bgp :
             for neighbor in ebgpNeighbors:
+                communityNum = ebgpNeighbors[neighbor]["as_number"]*10000
                 if ebgpNeighbors[neighbor]["priority"] == "client":
-                    routemap_client(fichier_res)
-                    routemap_client(file_conf)
+                    routemap_client(fichier_res, communityNum)
+                    routemap_client(file_conf, communityNum)
                 elif ebgpNeighbors[neighbor]["priority"] == "peer":
-                    routemap_peer(fichier_res)
-                    routemap_peer(file_conf)
+                    routemap_peer(fichier_res, communityNum)
+                    routemap_peer(file_conf, communityNum)
                 elif ebgpNeighbors[neighbor]["priority"] == "transport":
-                    routemap_transport(fichier_res)
-                    routemap_transport(file_conf)
+                    routemap_transport(fichier_res, communityNum)
+                    routemap_transport(file_conf, communityNum)
 
         end3_config(fichier_res)         
         end3_config(file_conf)
