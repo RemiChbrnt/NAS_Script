@@ -8,7 +8,6 @@ from ipaddress import IPv4Address
 from configuration_commands import Commands
 OPERATOR_FILE = 'json_file.json'
 
-
 # Method to parse the JSON config and convert it into a Python dictionary
 def jsonParse():
     objects = ""
@@ -26,15 +25,14 @@ def routemap_peer(config_file):
 def routemap_client(config_file):
     config_file.write("!\n!\nroute-map CLIENT permit 10\n match ip address 1\n set local-preference 150\n")
 
-def communities(config_file, ebgpNeighbors):
-    config_file.write("ip bgp-community new-format\n")
+def communities(config_file, clients, ebgpNeighbors, config):
+    config_file.write("ip community-list 10 permit internet\n")
     for neighbor in ebgpNeighbors:
-        if ebgpNeighbors[neighbor]["priority"] == "client":
-            config_file.write("ip community-list 1 permit {asnumber}:100".format(asnumber = ebgpNeighbors[neighbor]["as_number"]))
-        elif ebgpNeighbors[neighbor]["priority"] == "peer":
-            config_file.write("ip community-list 2 permit {asnumber}:100".format(asnumber = ebgpNeighbors[neighbor]["as_number"]))
-        elif ebgpNeighbors[neighbor]["priority"] == "transport":
-            config_file.write("ip community-list 3 permit {asnumber}:100".format(asnumber = ebgpNeighbors[neighbor]["as_number"]))
+        if ebgpNeighbors[neighbor]["priority"] == "peer" or ebgpNeighbors[neighbor]["priority"] == "transport":
+            for cli in clients:
+                for cliName in cli:
+                    if cli[cliName]["priority"] == "client":
+                        config_file.write("ip community-list 30 permit {community}\n".format(community=cli[cliName]["as_number"]*(10**5)))
 
 
 def init_config(router_i, config_file):
@@ -75,7 +73,7 @@ def config_ospf(router_i, config_file, mpls): # mpls = boolean défini dans le j
         config_file.write("router ospf {num_ospf}\n router-id {router_id}\n!\n".format(num_ospf = "4444", router_id = router_i.router_id))
 
 
-def config_ibgp(router_i, voisins_bgp, config_file, config): # voisins_bgp = liste des liens avec les routeurs de la même AS qui ont bgp
+def config_ibgp(router_i, neighborBgpIPs, config_file, config): # neighborBgpIPs = liste des ips des routeurs de la même AS qui ont bgp
     config_file.write("router bgp {as_number}\n bgp router-id {router_id}\n bgp log-neighbor-changes\n network {router_id} mask 255.255.255.255\n".format(as_number = router_i.as_number, router_id=router_i.router_id))
 
     # Advertising the necessary networks
@@ -89,14 +87,9 @@ def config_ibgp(router_i, voisins_bgp, config_file, config): # voisins_bgp = lis
                     for network in config[rtr]["neighbor"][neighbor]["advertised"]:
                         config_file.write(" network {network} mask 255.255.255.0\n".format(network=network))
 
-    for voisins in voisins_bgp : # Les routeurs configures ici sont tous dans notre AS, on est en ibgp
-        if voisins.side_a == router_i :
-            # Pour chaque voisin on écrit les lignes de config
-            config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_b.ipv4, as_number= router_i.as_number))
-
-        elif voisins.side_b == router_i :
-            # Pour chaque voisin on écrit les lignes de config
-            config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin = voisins.int_a.ipv4, as_number= router_i.as_number))
+    for ip in neighborBgpIPs:  # All these IPs are from BGP routers of our AS
+            config_file.write(" neighbor {ip_voisin} remote-as {as_number}\n".format(ip_voisin=ip, as_number=router_i.as_number))
+            config_file.write(" neighbor {ip_voisin} send-community\n".format(ip_voisin=ip, as_number=router_i.as_number))
 
 
 def config_ebgp(router_i, ebgpNeighbors, config_file):  # ebgpNeighbors = liste des routeurs voisins d'une AS différente
@@ -105,15 +98,17 @@ def config_ebgp(router_i, ebgpNeighbors, config_file):  # ebgpNeighbors = liste 
         if ebgpNeighbors[neighbor]["priority"] == "client":
             config_file.write(" neighbor {ip_voisin} route-map CLIENT in\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"]))
         elif ebgpNeighbors[neighbor]["priority"] == "peer":
-            config_file.write(" neighbor {ip_voisin} route-map PEER in\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"]))
+            config_file.write(" neighbor {ip_voisin} route-map PEER_IN in\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"]))
+            config_file.write(" neighbor {ip_voisin} route-map PEER_OUT out\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"]))
         elif ebgpNeighbors[neighbor]["priority"] == "transport":
-            config_file.write(" neighbor {ip_voisin} route-map TRANSPORT in\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"]))
+            config_file.write(" neighbor {ip_voisin} route-map TRANSPORT_IN in\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"]))
+            config_file.write(" neighbor {ip_voisin} route-map TRANSPORT_OUT out\n".format(ip_voisin=ebgpNeighbors[neighbor]["hisIpv4"]))
 
 def end1_config(config_file):
-    config_file.write("!\nip forward-protocol nd\n!")
+    config_file.write("!\nip forward-protocol nd\n!\n")
 
 def end2_config(config_file):
-    config_file.write("!\nno ip http server\nno ip http secure-server\n!")
+    config_file.write("!\nno ip http server\nno ip http secure-server\n")
     
 def end3_config(config_file):
     config_file.write("!\n!\n!\ncontrol-plane\n!\n!\nline con 0\n exec-timeout 0 0\n privilege level 15")
@@ -258,6 +253,13 @@ if __name__ == '__main__':
 
     routers, gns3_server, project_id, project_path, links = get_config(config)
 
+    ebgpClients = []  # The client Routers and their characteristics
+    for rtr in config:
+        if "neighbor" in config[rtr]:
+            ebgpClients.append(config[rtr]["neighbor"])
+
+    #print(ebgpClients)
+
     # print(project_path)
 
     for routerID in routers:
@@ -320,30 +322,48 @@ if __name__ == '__main__':
 
         if bgp:
             print ("Bgp is on for " + router.name)
+            bgpNeighborIPs = []
             bgpNeighbors = []
-            # 1) on ajoute nos liens de routeurs voisins qui ont bgp
+            # Adding the BGP neighbors' IPs within our AS
             for lien in links:
-                if lien.side_b.name in config:
-                    if lien.side_a.name == router.name and "bgp" in config[lien.side_b.name]:
-                        if config[lien.side_b.name]["bgp"]:     # If bgp is set to True
-                            bgpNeighbors.append(lien)
-                if lien.side_a.name in config:
-                    if lien.side_b.name == router.name and "bgp" in config[lien.side_a.name]:
-                        if config[lien.side_a.name]["bgp"]:     # If bgp is set to True
-                            bgpNeighbors.append(lien)
-            config_ibgp(router, bgpNeighbors, fichier_res, config)
-            config_ibgp(router, bgpNeighbors, file_conf, config)
+                if lien.side_a.name == router.name and "bgp" in config[lien.side_b.name]:
+                    if config[lien.side_b.name]["bgp"]:     # If bgp is set to True
+                        bgpNeighborIPs.append(lien.int_b.ipv4)
+                        bgpNeighbors.append(lien.side_b)
+                if lien.side_b.name == router.name and "bgp" in config[lien.side_a.name]:
+                    if config[lien.side_a.name]["bgp"]:     # If bgp is set to True
+                        bgpNeighborIPs.append(lien.int_a.ipv4)
+                        bgpNeighbors.append(lien.side_a)
+
+            addedNewIP = True
+            while addedNewIP:     # Iterate for our BGP neighbors' BGP neighbors until we have no more IP addition -> full BGP routers within the AS
+                addedNewIP = False
+                for rtr in bgpNeighbors:
+                    for lien in links:
+                        if lien.side_a == rtr and "bgp" in config[lien.side_b.name] and lien.side_b not in bgpNeighbors and lien.side_b != router:
+                            if config[lien.side_b.name]["bgp"]:  # If bgp is set to True
+                                bgpNeighborIPs.append(lien.int_b.ipv4)
+                                bgpNeighbors.append(lien.side_b)
+                                addedNewIP = True
+                        if lien.side_b == rtr and "bgp" in config[lien.side_a.name] and lien.side_a not in bgpNeighbors and lien.side_a != router:
+                            if config[lien.side_a.name]["bgp"]:  # If bgp is set to True
+                                bgpNeighborIPs.append(lien.int_a.ipv4)
+                                bgpNeighbors.append(lien.side_a)
+                                addedNewIP = True
+
+
+
+            config_ibgp(router, bgpNeighborIPs, fichier_res, config)
+            config_ibgp(router, bgpNeighborIPs, file_conf, config)
             config_ebgp(router, ebgpNeighbors, fichier_res)
             config_ebgp(router, ebgpNeighbors, file_conf)
-            fichier_res.write("!\n")
-            file_conf.write("!\n")
 
         end1_config(fichier_res) 
         end1_config(file_conf)
 
         if bgp :
-            communities(fichier_res, ebgpNeighbors)
-            communities(file_conf, ebgpNeighbors)
+            communities(fichier_res, ebgpClients, ebgpNeighbors, config)
+            communities(file_conf, ebgpClients, ebgpNeighbors, config)
 
         end2_config(fichier_res)         
         end2_config(file_conf)
