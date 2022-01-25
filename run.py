@@ -18,13 +18,13 @@ def jsonParse():
 
 def routemap_transport(config_file, community):
     config_file.write(f"!\n!\nroute-map TRANSPORT_IN permit 10\n match community 10\n set local-preference 50\n set community {community}\n!\n")
-    config_file.write("route-map TRANSPORT_OUT permit 10\n match community 30\n continue\n!\n")
+    config_file.write("route-map TRANSPORT_OUT permit 10\n match community 30\n continue\n")
 
 def routemap_peer(config_file, community):
     config_file.write(f"!\n!\nroute-map PEER_IN permit 10\n match community 10\n set local-preference 100\n set community {community}\n!\n")
-    config_file.write("route-map PEER_OUT permit 10\n match community 30\n continue\n!\n")
+    config_file.write("route-map PEER_OUT permit 10\n match community 30\n continue\n")
 def routemap_client(config_file, community):
-    config_file.write(f"!\n!\nroute-map CLIENT permit 10\n match community 10\n set local-preference 150\n set community {community}")
+    config_file.write(f"!\n!\nroute-map CLIENT permit 10\n match community 10\n set local-preference 150\n set community {community}\n!\n")
 
 def communities(config_file, clients, ebgpNeighbors, config):
     config_file.write("ip community-list 10 permit internet\n")
@@ -33,7 +33,7 @@ def communities(config_file, clients, ebgpNeighbors, config):
             for cli in clients:
                 for cliName in cli:
                     if cli[cliName]["priority"] == "client":
-                        config_file.write("ip community-list 30 permit {community}\n".format(community=cli[cliName]["as_number"]*(10**5)))
+                        config_file.write("ip community-list 30 permit {community}\n".format(community=str(cli[cliName]["as_number"])+":100"))
 
 
 def init_config(router_i, config_file):
@@ -182,7 +182,7 @@ def link_list(gns3_server, project_id, routers, config):
                     network = config[router_side_b.name]["neighbor"][neighbor]["network"]
                     eBGP_link = True
         if eBGP_link == False:  # We have an internal link (no eBGP)
-            ipv4 += 4  # In order to have a 0 at the end of the Network address
+            ipv4 += 256  # In order to have a 0 at the end of the Network address
 
         interface_a = Interface.Interface(
             name=int_a_name,
@@ -290,6 +290,7 @@ if __name__ == '__main__':
         if not os.path.isdir(router_config_path):
             os.mkdir(router_config_path)
         file_name = router_config_path + "\\i" + router.name[1:] + "_startup-config.cfg"
+        print(file_name)
         # Creating the res file if it doesn't exist
         if not os.path.isdir("./res"):
             os.mkdir("./res")
@@ -352,8 +353,6 @@ if __name__ == '__main__':
                                 bgpNeighbors.append(lien.side_a)
                                 addedNewIP = True
 
-
-
             config_ibgp(router, bgpNeighborIPs, fichier_res, config)
             config_ibgp(router, bgpNeighborIPs, file_conf, config)
             config_ebgp(router, ebgpNeighbors, fichier_res)
@@ -371,7 +370,7 @@ if __name__ == '__main__':
 
         if bgp :
             for neighbor in ebgpNeighbors:
-                communityNum = ebgpNeighbors[neighbor]["as_number"]*10000
+                communityNum = str(ebgpNeighbors[neighbor]["as_number"])+":100"
                 if ebgpNeighbors[neighbor]["priority"] == "client":
                     routemap_client(fichier_res, communityNum)
                     routemap_client(file_conf, communityNum)
