@@ -1,29 +1,24 @@
 # NAS_Script
 
-## Useful Links
+## But du projet : auto-configurer un projet GNS3 avec un script Python
 
-[Python Library](https://davidban77.github.io/gns3fy/api_reference/)
+### Utilisation du script
 
-[MarkDown Syntax for ReadMe File](https://www.markdownguide.org/basic-syntax)
+- avoir un projet GNS3 ouvert à configurer
 
+- avoir un fichier json à mettre en entrée contenant les directives de configuration souhaitées (par exemple, si ce router a besoin d'avoir BGP ou non)
 
-In GNS3, go to Edit -> Preferences -> Server, Untick **Protect Server with password** and tick **Allow console connections to any local IP Address**
+- lancer le script python
 
-Then download the developer version of [gns3fy](https://github.com/davidban77/gns3fy/tree/developer)
+### Fonctionnement
 
+- Une fois le script lancé, le projet GNS3 ainsi que les dataclasses sont récupérer
 
-## Objectifs
+- **Écriture des fichier de configuration (edit config dans GNS3):** adressage IP et mise en place de OSPF et MPLS pour tous routers et les autres devices. 
 
-- pour utiliser notre solution, il faut écrire un **fichier de configuration** simple résumant la config : préciser les routers, les liens entre eux, et les Providers Edge qui ont BGP activé
+    Mise en place de BGP sur les routers sur lesquels c'est spécifié (dans le fichier json), ainsi que du filtrage BGP en fonction des communities auquels appartiennent les routers de bordure
 
-- dans ce fichier de configuration, pas besoin de préciser l'implémentation de ospf ou mpls par exemple car on sait qu'il faut le faire sur tous les routers
-
-- ce fichier de configuration (json) peut générer des fichiers de configuration plus complets à donner au script python pour permettre de réaliser la configuration gns3 de manière automatique
-
-- il faut un json pour le provider et un json pour le client
-
-
-https://www.canva.com/design/DAExX9BsdTc/share/preview?token=K0Yroomzh0LFye2zvATy4Q&role=EDITOR&utm_content=DAExX9BsdTc&utm_campaign=designshare&utm_medium=link&utm_source=sharebutton
+- Placement de ces fichiers de configuration dans le projet GNS3
 
 
 
