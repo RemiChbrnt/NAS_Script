@@ -9,7 +9,7 @@
           "network": "10.10.11.0",
           "ourIpv4": "10.10.11.1",
           "hisIpv4": "10.10.11.2",
-          "priority": "client",
+          "priority": "peer",
           "advertised": ["10.10.12.0"]
         }
       }
@@ -24,7 +24,7 @@
           "network": "10.10.9.0",
           "ourIpv4": "10.10.9.1",
           "hisIpv4": "10.10.9.2",
-          "priority": "client",
+          "priority": "transport",
           "advertised": ["10.10.10.0"]
         }
       }
@@ -32,7 +32,18 @@
   "R3":
     {
       "client": false,
-      "bgp": false
+      "bgp": true,
+      "neighbor" : {
+        "R7": {
+          "as_number": 7400,
+          "interface": "GigabitEthernet3/0",
+          "network": "10.10.13.0",
+          "ourIpv4": "10.10.13.1",
+          "hisIpv4": "10.10.13.2",
+          "priority": "client",
+          "advertised": ["10.10.14.0"]
+        }
+      }
     },
   "R4":
     {
@@ -44,6 +55,10 @@
       "client": true
     },
   "R6":
+    {
+      "client": true
+    },
+  "R7":
     {
       "client": true
     },
