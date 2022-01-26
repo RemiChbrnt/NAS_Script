@@ -8,6 +8,7 @@ from ipaddress import IPv4Address
 from configuration_commands import Commands
 OPERATOR_FILE = 'json_file.json'
 
+
 # Method to parse the JSON config and convert it into a Python dictionary
 def jsonParse():
     objects = ""
@@ -16,24 +17,36 @@ def jsonParse():
     obj_dict = json.loads(objects)
     return obj_dict
 
+
 def routemap_transport(config_file, community):
     config_file.write(f"!\n!\nroute-map TRANSPORT_IN permit 10\n match community 10\n set local-preference 50\n set community {community}\n!\n")
     config_file.write("route-map TRANSPORT_OUT permit 10\n match community 30\n continue\n")
 
+
 def routemap_peer(config_file, community):
     config_file.write(f"!\n!\nroute-map PEER_IN permit 10\n match community 10\n set local-preference 100\n set community {community}\n!\n")
     config_file.write("route-map PEER_OUT permit 10\n match community 30\n continue\n")
+
+
 def routemap_client(config_file, community):
     config_file.write(f"!\n!\nroute-map CLIENT permit 10\n match community 10\n set local-preference 150\n set community {community}\n!\n")
 
-def communities(config_file, clients, ebgpNeighbors, config):
+
+def communities(config_file, routerName, clients, ebgpNeighbors, config):
     config_file.write("ip community-list 10 permit internet\n")
     for neighbor in ebgpNeighbors:
+        # Peers and Transport (Providers) must have access to the clients' routes
         if ebgpNeighbors[neighbor]["priority"] == "peer" or ebgpNeighbors[neighbor]["priority"] == "transport":
             for cli in clients:
                 for cliName in cli:
                     if cli[cliName]["priority"] == "client":
-                        config_file.write("ip community-list 30 permit {community}\n".format(community=str(cli[cliName]["as_number"])+":100"))
+                        config_file.write("ip community-list 30 permit {community}\n".format(community=str(cli[cliName]["as_number"])))
+        # Peers also have access to other peers routes
+        if ebgpNeighbors[neighbor]["priority"] == "peer":
+            for cli in clients:
+                for cliName in cli:
+                    if cli[cliName]["priority"] == "peer" and cliName is not routerName:
+                        config_file.write("ip community-list 30 permit {community}\n".format(community=str(cli[cliName]["as_number"])))
 
 
 def init_config(router_i, config_file):
@@ -290,7 +303,7 @@ if __name__ == '__main__':
         if not os.path.isdir(router_config_path):
             os.mkdir(router_config_path)
         file_name = router_config_path + "\\i" + router.name[1:] + "_startup-config.cfg"
-        print(file_name)
+        # print(file_name)
         # Creating the res file if it doesn't exist
         if not os.path.isdir("./res"):
             os.mkdir("./res")
@@ -362,15 +375,15 @@ if __name__ == '__main__':
         end1_config(file_conf)
 
         if bgp :
-            communities(fichier_res, ebgpClients, ebgpNeighbors, config)
-            communities(file_conf, ebgpClients, ebgpNeighbors, config)
+            communities(fichier_res, router.name, ebgpClients, ebgpNeighbors, config)
+            communities(file_conf, router.name, ebgpClients, ebgpNeighbors, config)
 
         end2_config(fichier_res)         
         end2_config(file_conf)
 
         if bgp :
             for neighbor in ebgpNeighbors:
-                communityNum = str(ebgpNeighbors[neighbor]["as_number"])+":100"
+                communityNum = str(ebgpNeighbors[neighbor]["as_number"])
                 if ebgpNeighbors[neighbor]["priority"] == "client":
                     routemap_client(fichier_res, communityNum)
                     routemap_client(file_conf, communityNum)
